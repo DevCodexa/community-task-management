@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+  "start": "react-scripts start",
+}
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
