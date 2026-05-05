@@ -112,7 +112,7 @@ Ana sorumluluklar:
 
 Uygulama istemci tarafinda calisan bir SPA'dir. React Router sayfa gecislerini yonetir. Her ana is alani icin `src/lib/supabase*.ts` dosyalarinda CRUD servisleri bulunur. Sayfalar ve modal bilesenleri bu servisleri kullanarak Supabase tablolarindan veri okur veya yazar.
 
-Genel akıs:
+Genel akis:
 
 1. `main.tsx`, React uygulamasini DOM'a baglar.
 2. `App.tsx`, tema ve kullanici profili provider'larini sarar, rotalari tanimlar.
@@ -209,7 +209,7 @@ Desteklenen islemler:
 - gorevli ve konusmaci sayilarini hesaplama
 - yaklasan/gecmis etkinlik sorgulari
 
-Atama tabloları:
+Atama tablolari:
 
 - `event_staff`: etkinlik-uye iliskisi
 - `event_speakers`: etkinlik-konusmaci iliskisi
