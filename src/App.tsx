@@ -10,12 +10,15 @@ import { BirthdaysPage } from './pages/BirthdaysPage'
 import { EventsPage } from './pages/EventsPage'
 import { ThemeProvider } from './context/ThemeContext'
 import { UserProfileProvider } from './context/UserProfileContext'
+import { AuthRedirector } from './context/AuthRedirector'
+
 
 function App() {
   return (
     <ThemeProvider>
       <UserProfileProvider>
         <BrowserRouter>
+          <AuthRedirector />
           <Routes>
             <Route path="/" element={<LoginScreen />} />
             <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
