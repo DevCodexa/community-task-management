@@ -17,7 +17,7 @@ export const BirthdaysPage: React.FC = () => {
   const [members, setMembers] = useState<FullMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [activeTab, setActiveTab] = useState<TabType>('today');
 
   // Get current date info
   const today = new Date();
@@ -82,10 +82,11 @@ export const BirthdaysPage: React.FC = () => {
   // Tabs configuration
   const tabs = [
     { 
-      id: 'all' as TabType, 
-      label: 'Tüm Doğum Günleri', 
-      icon: Cake,
-      count: allBirthdays.length
+      id: 'today' as TabType, 
+      label: 'Bugün Doğanlar', 
+      icon: Gift,
+      count: todayBirthdays.length,
+      highlight: todayBirthdays.length > 0
     },
     { 
       id: 'month' as TabType, 
@@ -94,11 +95,10 @@ export const BirthdaysPage: React.FC = () => {
       count: thisMonthBirthdays.length
     },
     { 
-      id: 'today' as TabType, 
-      label: 'Bugün Doğanlar', 
-      icon: Gift,
-      count: todayBirthdays.length,
-      highlight: todayBirthdays.length > 0
+      id: 'all' as TabType, 
+      label: 'Tüm Doğum Günleri', 
+      icon: Cake,
+      count: allBirthdays.length
     },
   ];
 
