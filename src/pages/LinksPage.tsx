@@ -1,12 +1,14 @@
-import React, { useState, useEffect, } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  ExternalLink, 
+import React, { useState, useEffect } from 'react';
+import {
+  Plus,
+  Trash2,
+  ExternalLink,
   Folder,
   Loader2,
   AlertCircle,
-Edit2} from 'lucide-react';
+  Edit2,
+  ChevronDown
+} from 'lucide-react';
 import { 
   getAllUsefulLinks, 
   groupLinksByCategory, 
@@ -24,6 +26,8 @@ export const LinksPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<UsefulLink | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+
 
   useEffect(() => {
     fetchLinks();
@@ -71,6 +75,11 @@ export const LinksPage: React.FC = () => {
   const openLink = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
+
+  const toggleCategory = (category: string) => {
+    setOpenCategory((prev) => (prev === category ? null : category));
+  };
+
 
   if (loading) {
     return (
@@ -127,65 +136,79 @@ export const LinksPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-8 space-y-8">
-              {groupedLinks.map((group) => (
-                <div key={group.category} className="space-y-4">
-                  <div className="flex items-center gap-2 text-silver-400">
-                    <Folder className="h-5 w-5" />
-                    <h2 className="font-semibold text-lg uppercase tracking-wider">
-                      {group.category}
-                    </h2>
-                    <span className="text-sm text-silver-600 font-mono">({group.count})</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {group.links.map((linkLink) => (
-                      <div
-                        key={linkLink.id}
-                        className="group relative p-6 rounded-2xl bg-coal-900/50 border border-white/10 hover:border-white/20 hover:bg-coal-900/70 transition-all shadow-lg hover:shadow-2xl"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <a 
-                              href={linkLink.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-semibold text-lg text-silver-100 group-hover:text-white truncate block line-clamp-1 hover:underline pr-2"
-                              title={linkLink.url}
-                            >
-                              {linkLink.title}
-                            </a>
-                            {linkLink.description && (
-                              <p className="text-sm text-silver-400 mt-2 line-clamp-2">
-                                {linkLink.description}
-                              </p>
-                            )}
+              {groupedLinks.map((group) => {
+                const isOpen = openCategory === group.category;
 
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            {/* ExternalLink butonu kaldırıldı - title tıklar */}
+                return (
+                  <div key={group.category} className="space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(group.category)}
+                      className="w-full flex items-center gap-2 text-silver-200 hover:text-white transition-colors"
+                      aria-expanded={isOpen}
+                    >
+                      <Folder className="h-5 w-5 text-silver-400" />
+                      <h2 className="flex-1 font-semibold text-lg uppercase tracking-wider text-left">
+                        {group.category}
+                      </h2>
+                      <span className="text-sm text-silver-600 font-mono">({group.count})</span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-silver-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+                      />
+                    </button>
 
-                            <button
-                              onClick={() => handleEdit(linkLink)}
-                              className="p-2 rounded-xl text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-all"
-                              title="Düzenle"
+                    <div
+                      className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+                    >
+                      <div className="pt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {group.links.map((linkLink) => (
+                            <div
+                              key={linkLink.id}
+                              className="group relative p-6 rounded-2xl bg-coal-900/50 border border-white/10 hover:border-white/20 hover:bg-coal-900/70 transition-all shadow-lg hover:shadow-2xl"
                             >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(linkLink.id)}
-                              className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-all"
-                              title="Sil"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <a
+                                    href={linkLink.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-semibold text-lg text-silver-100 group-hover:text-white truncate block line-clamp-1 hover:underline pr-2"
+                                    title={linkLink.url}
+                                  >
+                                    {linkLink.title}
+                                  </a>
+                                  {linkLink.description && (
+                                    <p className="text-sm text-silver-400 mt-2 line-clamp-2">
+                                      {linkLink.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                  <button
+                                    onClick={() => handleEdit(linkLink)}
+                                    className="p-2 rounded-xl text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-all"
+                                    title="Düzenle"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(linkLink.id)}
+                                    className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-all"
+                                    title="Sil"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        {/* URL gizlendi - title tıklanabilir */}
-
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
