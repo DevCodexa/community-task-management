@@ -276,13 +276,6 @@ export const DepartmentsPage: React.FC = () => {
                           >
                             Detay
                           </button>
- <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
-  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/20 text-amber-200 shadow-[0_0_24px_rgba(251,191,36,0.2)]">
-    Detay →
-  </span>
-</div>
-
-
                           <button
                             type="button"
                             className="text-sm font-semibold text-amber-300 hover:text-amber-200"
