@@ -11,6 +11,10 @@ import { EventsPage } from './pages/EventsPage'
 import { ThemeProvider } from './context/ThemeContext'
 import { UserProfileProvider } from './context/UserProfileContext'
 import { AuthRedirector } from './context/AuthRedirector'
+import { DepartmentsPage } from './pages/DepartmentsPage'
+import { AreasPagePlaceholder } from './pages/AreasPagePlaceholder'
+import { ProjectsPagePlaceholder } from './pages/ProjectsPagePlaceholder'
+
 
 
 function App() {
@@ -23,6 +27,10 @@ function App() {
             <Route path="/" element={<LoginScreen />} />
             <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
             <Route path="/uyeler" element={<Layout><MembersPage /></Layout>} />
+
+            <Route path="/organizasyon/bolumler" element={<Layout><DepartmentsPage /></Layout>} />
+            <Route path="/organizasyon/bolum/:deptId/alanlar" element={<Layout><AreasPagePlaceholder /></Layout>} />
+            <Route path="/organizasyon/alan/:areaId/projeler" element={<Layout><ProjectsPagePlaceholder /></Layout>} />
             <Route path="/dogum-gunleri" element={<Layout><BirthdaysPage /></Layout>} />
             <Route path="/gorev-zinciri" element={<Layout><TasksPage /></Layout>} />
             <Route path="/linkler" element={<Layout><LinksPage /></Layout>} />

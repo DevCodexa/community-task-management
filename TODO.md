@@ -1,10 +1,6 @@
-# TODO
-
-- [ ] LinksPage: Kategori başlıklarını accordion (aç/kapa) UI’sine dönüştür.
-  - [x] Sayfa açılışında tüm kategorileri kapalı başlat.
-  - [x] Kategori başlığına tıklanınca içindeki linkler görünür/gizlenir.
-  - [x] Animasyon (CSS transition/height) ekle.
-  - [x] Mevcut link kartı, ekleme/düzenleme/silme mantığını bozmadan sadece görünümü güncelle.
-- [ ] Test: Sayfayı çalıştırıp kategori aç/kapa davranışını doğrula.
+- [x] DB: org_departments RLS policy ekle/update (authenticated insert).
+- [ ] DB: Uygulamadan önce Supabase SQL Editor’da database/org-departments-rls-fix.sql çalıştır.
+- [ ] App: tekrar "Bölüm Ekle" ile dene.
+- [ ] Gerekirse loglarda auth role doğrula (403/RLS).
 
 
