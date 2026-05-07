@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Building2, LayoutGrid, List, Plus, Search, User } from 'lucide-react';
 
-
-
 import { useNavigate } from 'react-router-dom';
-import { getDepartments } from '../lib/supabaseOrgHierarchy';
+import { getDepartments, deleteDepartment, OrgDepartment } from '../lib/supabaseOrgHierarchy';
 import { OrgDepartmentCard } from '../components/org/OrgDepartmentCard';
 import { DepartmentModal } from '../components/org/DepartmentModal';
-import { OrgDepartment } from '../lib/supabaseOrgHierarchy';
+import { DepartmentDetailModal } from '../components/org/DepartmentDetailModal';
 
 export const DepartmentsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +16,9 @@ export const DepartmentsPage: React.FC = () => {
 
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<OrgDepartment | null>(null);
 
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
@@ -53,6 +54,45 @@ export const DepartmentsPage: React.FC = () => {
     });
   }, [departments, query]);
 
+  const openDetail = (department: OrgDepartment) => {
+    setSelectedDepartment(department);
+    setIsDetailOpen(true);
+  };
+
+  const openEdit = (department: OrgDepartment) => {
+    setSelectedDepartment(department);
+    setIsEditOpen(true);
+  };
+
+  const closeDetail = () => {
+    setIsDetailOpen(false);
+    setSelectedDepartment(null);
+  };
+
+  const closeEdit = () => {
+    setIsEditOpen(false);
+    setSelectedDepartment(null);
+  };
+
+  const handleDeleteDepartment = async (department: OrgDepartment) => {
+    const confirmed = window.confirm(`"${department.name}" bölümünü kalıcı olarak silmek istediğinize emin misiniz?`);
+    if (!confirmed) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await deleteDepartment(department.id);
+      await fetchDepartments();
+      if (selectedDepartment?.id === department.id) {
+        closeDetail();
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Bölüm silinemedi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Top Bar */}
@@ -71,7 +111,7 @@ export const DepartmentsPage: React.FC = () => {
               Bölümler
             </h1>
             <p className="mt-1 text-sm text-silver-600">
-              Luminary Topluluğu bölümlerini yönetin.
+              Topluluğun bölümlerini yönetin.
             </p>
           </div>
         </div>
@@ -225,28 +265,45 @@ export const DepartmentsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-3 opacity-100 group-hover:opacity-100">
+                        <div className="flex flex-wrap items-center gap-3 opacity-100 group-hover:opacity-100">
                           <button
                             type="button"
                             className="text-sm font-semibold text-ice-300 hover:text-ice-200"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/organizasyon/bolum/${dept.id}/alanlar`);
+                              openDetail(dept);
                             }}
                           >
-                            Görüntüle
+                            Detay
+                          </button>
+ <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
+  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/20 text-amber-200 shadow-[0_0_24px_rgba(251,191,36,0.2)]">
+    Detay →
+  </span>
+</div>
+
+
+                          <button
+                            type="button"
+                            className="text-sm font-semibold text-amber-300 hover:text-amber-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(dept);
+                            }}
+                          >
+                            Düzenle
                           </button>
                           <button
                             type="button"
                             className="text-sm font-semibold text-red-300/80 hover:text-red-300"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Delete: henüz API bağlanmadı (mevcut task için sadece placeholder)
-                              alert('Silme işlemi bu ekranda henüz aktif değil.');
+                              handleDeleteDepartment(dept);
                             }}
                           >
                             Sil
                           </button>
+                          
                         </div>
                       </td>
                     </tr>
@@ -261,6 +318,9 @@ export const DepartmentsPage: React.FC = () => {
                   key={dept.id}
                   department={dept}
                   onClick={() => navigate(`/organizasyon/bolum/${dept.id}/alanlar`)}
+                  onView={() => openDetail(dept)}
+                  onEdit={() => openEdit(dept)}
+                  onDelete={() => handleDeleteDepartment(dept)}
                 />
               ))}
             </div>
@@ -277,6 +337,22 @@ export const DepartmentsPage: React.FC = () => {
           setIsModalOpen(false);
           fetchDepartments();
         }}
+      />
+
+      <DepartmentModal
+        isOpen={isEditOpen}
+        onClose={closeEdit}
+        onSuccess={() => {
+          closeEdit();
+          fetchDepartments();
+        }}
+        department={selectedDepartment}
+      />
+
+      <DepartmentDetailModal
+        isOpen={isDetailOpen}
+        onClose={closeDetail}
+        department={selectedDepartment}
       />
     </div>
   );

@@ -1,20 +1,24 @@
 import React from 'react';
-import { Building2, User } from 'lucide-react';
+import { Building2, Eye, Edit3, Trash2 } from 'lucide-react';
 import { OrgDepartment } from '../../lib/supabaseOrgHierarchy';
 import { getColorVariantById } from '../../lib/colorVariants';
-
 
 interface OrgDepartmentCardProps {
   department: OrgDepartment;
   onClick: () => void;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
 export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
   department,
   onClick,
+  onView,
+  onEdit,
+  onDelete,
 }) => {
   const responsible = department.responsible_person;
-
   const variant = getColorVariantById(department.id || department.name);
 
   return (
@@ -22,19 +26,13 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
       type="button"
       onClick={onClick}
       className="group relative w-full text-left rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:bg-white/[0.05] hover:border-white/15"
-      style={{
-        // Hover öncesi very subtle tint
-        boxShadow: `0 0 0 rgba(0,0,0,0)`,
-      }}
     >
-      {/* Sol kenar gradient şeridi */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100"
         style={{ background: `linear-gradient(180deg, ${variant.glowRGBA} 0%, rgba(0,0,0,0) 100%)` }}
       />
 
-      {/* Hover shine */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
@@ -42,7 +40,6 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
         }}
       />
 
-      {/* Hover glow (arka plan) */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -51,9 +48,7 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
         }}
       />
 
-      {/* Soft lift + glow */}
       <div className="relative">
-
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -66,7 +61,6 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
               </h3>
             </div>
 
-
             {department.description ? (
               <p className="mt-2 text-sm text-silver-600 line-clamp-2">
                 {department.description}
@@ -78,20 +72,52 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
             )}
           </div>
 
-          <div
-            className="rounded-2xl bg-white/[0.03] px-3 py-2 flex items-center gap-2 shrink-0"
-            style={{
-              border: `1px solid ${variant.border}`,
-              boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 30px ${variant.glowRGBA2}`,
-            }}
-          >
-            <User
-              className="h-4 w-4"
-              style={{ color: variant.text, filter: `drop-shadow(0 0 10px ${variant.glowRGBA2})` }}
-            />
-            <span className="text-xs font-semibold text-silver-100">Sorumlu</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView();
+              }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-silver-100 transition-all duration-200 hover:scale-105 hover:bg-white/[0.12] hover:text-ice-100"
+              style={{
+                color: variant.text,
+                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+              }}
+              aria-label="Detay Görüntüle"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-silver-100 transition-all duration-200 hover:scale-105 hover:bg-white/[0.12] hover:text-ice-100"
+              style={{
+                color: variant.text,
+                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+              }}
+              aria-label="Düzenle"
+            >
+              <Edit3 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-silver-100 transition-all duration-200 hover:scale-105 hover:bg-red-500/10 hover:text-red-300"
+              style={{
+                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+              }}
+              aria-label="Sil"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
-
         </div>
 
         <div className="mt-5 flex items-center gap-3">
@@ -103,7 +129,6 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
             }}
           >
             {responsible?.avatar ? (
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               <img
                 src={responsible.avatar}
                 alt={responsible.name}
@@ -120,7 +145,6 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
             )}
           </div>
 
-
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-silver-100 truncate">
               {responsible?.name ?? 'Atanmadı'}
@@ -129,27 +153,14 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
               {responsible ? 'Sorumlu kişi' : 'Lütfen sorumlu atayın'}
             </p>
           </div>
-
-          <div
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            aria-hidden="true"
-          >
-            <span
-              className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border bg-white/[0.03]"
-              style={{
-                borderColor: variant.border,
-                color: variant.text,
-                boxShadow: `0 0 24px ${variant.glowRGBA2}`,
-                background: `linear-gradient(180deg, ${variant.glowRGBA2}, rgba(255,255,255,0.01))`,
-              }}
-            >
-              →
-            </span>
-          </div>
+           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
+  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/20 text-amber-200 shadow-[0_0_24px_rgba(251,191,36,0.2)]">
+    →
+  </span>
+</div>
         </div>
       </div>
 
-      {/* Subtle lift on hover */}
       <div
         className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{

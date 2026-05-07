@@ -29,6 +29,7 @@ export interface OrgDepartment {
     id: string;
     name: string;
     avatar: string;
+    email?: string | null;
   } | null;
 }
 
@@ -91,7 +92,7 @@ export const getDepartments = async (): Promise<OrgDepartment[]> => {
     .from('org_departments')
     .select(
       `*,
-       responsible_person:members(id, name, avatar)`
+       responsible_person:members(id, name, avatar, email)`
     )
     .order('created_at', { ascending: false });
 
@@ -120,7 +121,35 @@ export const createDepartment = async (payload: {
     ])
     .select(
       `*,
-       responsible_person:members(id, name, avatar)`
+       responsible_person:members(id, name, avatar, email)`
+    )
+    .single();
+
+  if (error) throwError(error);
+
+  return {
+    ...data,
+    responsible_person: (data as any).responsible_person ?? null,
+  };
+};
+
+export const updateDepartment = async (payload: {
+  department_id: string;
+  name: string;
+  description?: string | null;
+  responsible_person_id: string;
+}): Promise<OrgDepartment> => {
+  const { data, error } = await supabase
+    .from('org_departments')
+    .update({
+      name: payload.name,
+      description: payload.description ?? null,
+      responsible_person_id: payload.responsible_person_id,
+    })
+    .eq('id', payload.department_id)
+    .select(
+      `*,
+       responsible_person:members(id, name, avatar, email)`
     )
     .single();
 

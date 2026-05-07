@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Search, UserCheck, Building2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { Input } from '../ui/Input';
-import { createDepartment } from '../../lib/supabaseOrgHierarchy';
+import { createDepartment, updateDepartment, OrgDepartment } from '../../lib/supabaseOrgHierarchy';
 import { searchMembers } from '../../lib/supabaseMembers';
 import { sendEmail } from '../../lib/resend';
 import { supabase } from '../../lib/supabase';
@@ -19,14 +19,17 @@ interface DepartmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  department?: OrgDepartment | null;
 }
 
 export const DepartmentModal: React.FC<DepartmentModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  department,
 }) => {
   const { isIceBlue } = useTheme();
+  const isEditing = Boolean(department?.id);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -41,15 +44,15 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    setName('');
-    setDescription('');
+    setName(department?.name ?? '');
+    setDescription(department?.description ?? '');
     setMemberQuery('');
     setMembers([]);
-    setSelectedMemberId(null);
+    setSelectedMemberId(department?.responsible_person?.id ?? null);
     setLoadingMembers(false);
     setSubmitting(false);
     setError(null);
-  }, [isOpen]);
+  }, [isOpen, department]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -102,8 +105,18 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
   const selectedMember = useMemo(() => {
     if (!selectedMemberId) return null;
-    return members.find((m) => m.id === selectedMemberId) || null;
-  }, [members, selectedMemberId]);
+    const found = members.find((m) => m.id === selectedMemberId);
+    if (found) return found;
+    if (department?.responsible_person?.id === selectedMemberId) {
+      return {
+        id: department.responsible_person.id,
+        name: department.responsible_person.name,
+        email: '',
+        avatar: department.responsible_person.avatar,
+      };
+    }
+    return null;
+  }, [members, selectedMemberId, department]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -138,19 +151,24 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
         return;
       }
 
-      const created = await createDepartment({
-        name: trimmedName,
-        description: description.trim() ? description.trim() : null,
-        responsible_person_id: selectedMemberId,
-      });
+      if (isEditing && department) {
+        await updateDepartment({
+          department_id: department.id,
+          name: trimmedName,
+          description: description.trim() ? description.trim() : null,
+          responsible_person_id: selectedMemberId,
+        });
+      } else {
+        const created = await createDepartment({
+          name: trimmedName,
+          description: description.trim() ? description.trim() : null,
+          responsible_person_id: selectedMemberId,
+        });
 
-      // Email flow: resend.ts üzerinden Edge Function tetiklenir.
-
-      // (DB trigger yoksa da frontend üzerinden çalışır; mock/trigger altyapısı burada.)
-      const to = selectedMember.email;
-      if (to) {
-        const subject = 'Luminary Topluluğu’nda yeni bir bölüm sorumlusu olarak atandınız';
-        const html = `
+        const to = selectedMember.email;
+        if (to) {
+          const subject = 'Luminary Topluluğu’nda yeni bir bölüm sorumlusu olarak atandınız';
+          const html = `
 <!DOCTYPE html>
 <html lang="tr">
   <head>
@@ -203,14 +221,15 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
     </table>
   </body>
 </html>
-        `.trim();
+            `.trim();
 
-        await sendEmail(to, subject, html);
+          await sendEmail(to, subject, html);
+        }
       }
 
       onSuccess();
     } catch (e: any) {
-      setError(e?.message || 'Bölüm oluşturulamadı.');
+      setError(e?.message || (isEditing ? 'Bölüm güncellenemedi.' : 'Bölüm oluşturulamadı.'));
     } finally {
       setSubmitting(false);
     }
@@ -232,9 +251,13 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-ice-500/10 border border-ice-500/20">
                 <Building2 className="h-4 w-4 text-ice-400" />
               </span>
-              <h2 className="text-lg font-bold text-silver-100">Bölüm Ekle</h2>
+              <h2 className="text-lg font-bold text-silver-100">
+                {isEditing ? 'Bölümü Düzenle' : 'Bölüm Ekle'}
+              </h2>
             </div>
-            <p className="mt-1 text-sm text-silver-600">Ad, açıklama ve sorumlu kişi seçin.</p>
+            <p className="mt-1 text-sm text-silver-600">
+              {isEditing ? 'Mevcut bölümü ve sorumlu kişiyi güncelleyin.' : 'Ad, açıklama ve sorumlu kişi seçin.'}
+            </p>
           </div>
 
           <button
@@ -361,7 +384,7 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
                 disabled={submitting}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-ice-500/20 border border-ice-500/20 text-ice-300 hover:bg-ice-500/25 hover:border-ice-500/30 transition-all text-sm font-semibold disabled:opacity-60"
               >
-                {submitting ? 'Oluşturuluyor...' : 'Bölümü Oluştur'}
+                {submitting ? 'Kaydediliyor...' : isEditing ? 'Güncelle' : 'Bölümü Oluştur'}
               </button>
             </div>
           </div>
