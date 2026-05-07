@@ -15,6 +15,24 @@ const throwError = (error: any): never => {
 // ------------------------------------------------------------
 
 export type AreaMemberRole = 'LEADER' | 'TEAM_MEMBER';
+export type DepartmentMemberRole = 'LEADER' | 'TEAM_MEMBER';
+
+export interface OrgDepartmentMember {
+  id: string;
+  department_id: string;
+  user_id: string;
+  role: DepartmentMemberRole;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+
+  user?: {
+    id: string;
+    name: string;
+    avatar: string;
+    email?: string | null;
+  } | null;
+}
 
 export interface OrgDepartment {
   id: string;
@@ -31,6 +49,8 @@ export interface OrgDepartment {
     avatar: string;
     email?: string | null;
   } | null;
+
+  members?: OrgDepartmentMember[];
 }
 
 export interface OrgAreaMember {
@@ -46,6 +66,7 @@ export interface OrgAreaMember {
     id: string;
     name: string;
     avatar: string;
+    email?: string | null;
   } | null;
 }
 
@@ -63,9 +84,11 @@ export interface OrgArea {
     id: string;
     name: string;
     avatar: string;
+    email?: string | null;
   } | null;
 
   members?: OrgAreaMember[];
+  projects?: { id: string; name: string }[];
 }
 
 export interface OrgProject {
@@ -82,17 +105,41 @@ export interface OrgProject {
   deleted_at: string | null;
 }
 
+export const getProjectMemberCountsByProjectIds = async (projectIds: string[]): Promise<Map<string, number>> => {
+  if (!projectIds.length) return new Map();
+
+  const { data, error } = await supabase
+    .from('org_project_members')
+    .select('project_id')
+    .in('project_id', projectIds);
+
+  if (error) {
+    // If the project member table does not exist yet, return an empty map and fall back gracefully.
+    console.warn('Unable to fetch project member counts:', error.message || error);
+    return new Map();
+  }
+
+  const counts = new Map<string, number>();
+  (data || []).forEach((row: any) => {
+    if (!row?.project_id) return;
+    counts.set(row.project_id, (counts.get(row.project_id) ?? 0) + 1);
+  });
+
+  return counts;
+};
+
 // ------------------------------------------------------------
 // Departments
 // ------------------------------------------------------------
 
 export const getDepartments = async (): Promise<OrgDepartment[]> => {
-  // members join (sorumlu kişi)
+  // members join (sorumlu kişi ve departman üyeleri)
   const { data, error } = await supabase
     .from('org_departments')
     .select(
       `*,
-       responsible_person:members(id, name, avatar, email)`
+       responsible_person:members(id, name, avatar, email),
+       members:org_department_members(id, user_id, role, created_at, updated_at, deleted_at, user:members(id, name, avatar, email))`
     )
     .order('created_at', { ascending: false });
 
@@ -100,9 +147,55 @@ export const getDepartments = async (): Promise<OrgDepartment[]> => {
 
   return (data || []).map((d: any) => ({
     ...d,
-    // supabase alias returns `responsible_person` or null
     responsible_person: d.responsible_person ?? null,
+    members: (d.members || []).map((m: any) => ({
+      ...m,
+      user: m.user ?? null,
+    })),
   }));
+};
+
+export const getDepartmentMembersByDepartmentId = async (departmentId: string): Promise<OrgDepartmentMember[]> => {
+  const { data, error } = await supabase
+    .from('org_department_members')
+    .select(`*, user:members(id, name, avatar, email)`)
+    .eq('department_id', departmentId);
+
+  if (error) throwError(error);
+
+  return (data || []).map((m: any) => ({
+    ...m,
+    user: m.user ?? null,
+  }));
+};
+
+export const setDepartmentMembers = async (payload: {
+  department_id: string;
+  memberIds: string[];
+  leaderId?: string | null;
+}): Promise<void> => {
+  const { error: delErr } = await supabase
+    .from('org_department_members')
+    .delete()
+    .eq('department_id', payload.department_id);
+
+  if (delErr) throwError(delErr);
+
+  if (!payload.memberIds.length) return;
+
+  const leaderId = payload.leaderId ?? null;
+
+  const rows = payload.memberIds.map((userId) => ({
+    department_id: payload.department_id,
+    user_id: userId,
+    role: leaderId && leaderId === userId ? 'LEADER' : 'TEAM_MEMBER',
+  }));
+
+  const { error: insErr } = await supabase
+    .from('org_department_members')
+    .insert(rows);
+
+  if (insErr) throwError(insErr);
 };
 
 export const createDepartment = async (payload: {
@@ -121,7 +214,8 @@ export const createDepartment = async (payload: {
     ])
     .select(
       `*,
-       responsible_person:members(id, name, avatar, email)`
+       responsible_person:members(id, name, avatar, email),
+       members:org_department_members(id, user_id, role, created_at, updated_at, deleted_at, user:members(id, name, avatar, email))`
     )
     .single();
 
@@ -130,6 +224,10 @@ export const createDepartment = async (payload: {
   return {
     ...data,
     responsible_person: (data as any).responsible_person ?? null,
+    members: (data as any).members?.map((m: any) => ({
+      ...m,
+      user: m.user ?? null,
+    })) ?? [],
   };
 };
 
@@ -149,7 +247,8 @@ export const updateDepartment = async (payload: {
     .eq('id', payload.department_id)
     .select(
       `*,
-       responsible_person:members(id, name, avatar, email)`
+       responsible_person:members(id, name, avatar, email),
+       members:org_department_members(id, user_id, role, created_at, updated_at, deleted_at, user:members(id, name, avatar, email))`
     )
     .single();
 
@@ -158,6 +257,10 @@ export const updateDepartment = async (payload: {
   return {
     ...data,
     responsible_person: (data as any).responsible_person ?? null,
+    members: (data as any).members?.map((m: any) => ({
+      ...m,
+      user: m.user ?? null,
+    })) ?? [],
   };
 };
 
@@ -180,7 +283,8 @@ export const getAreasByDepartmentId = async (departmentId: string): Promise<OrgA
     .from('org_areas')
     .select(
       `*,
-       area_leader:members(id, name, avatar)`
+       area_leader:members(id, name, avatar, email),
+       projects:org_projects(id, name)`
     )
     .eq('department_id', departmentId)
     .order('created_at', { ascending: false });
@@ -191,6 +295,7 @@ export const getAreasByDepartmentId = async (departmentId: string): Promise<OrgA
     ...a,
     area_leader: a.area_leader ?? null,
     members: [],
+    projects: a.projects ?? [],
   }));
 };
 
@@ -212,7 +317,7 @@ export const createArea = async (payload: {
     ])
     .select(
       `*,
-       area_leader:members(id, name, avatar)`
+       area_leader:members(id, name, avatar, email)`
     )
     .single();
 
@@ -241,7 +346,7 @@ export const updateArea = async (payload: {
     .eq('id', payload.area_id)
     .select(
       `*,
-       area_leader:members(id, name, avatar)`
+       area_leader:members(id, name, avatar, email)`
     )
     .single();
 

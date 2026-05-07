@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Search, UserCheck, Building2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { Input } from '../ui/Input';
-import { createDepartment, updateDepartment, OrgDepartment } from '../../lib/supabaseOrgHierarchy';
+import { createDepartment, updateDepartment, getDepartmentMembersByDepartmentId, setDepartmentMembers, OrgDepartment } from '../../lib/supabaseOrgHierarchy';
 import { searchMembers } from '../../lib/supabaseMembers';
 import { sendEmail } from '../../lib/resend';
 import { supabase } from '../../lib/supabase';
@@ -39,6 +39,7 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<MemberPick | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,10 +50,46 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
     setMemberQuery('');
     setMembers([]);
     setSelectedMemberId(department?.responsible_person?.id ?? null);
+    setSelectedMember(
+      department?.responsible_person
+        ? {
+            id: department.responsible_person.id,
+            name: department.responsible_person.name,
+            email: department.responsible_person.email ?? '',
+            avatar: department.responsible_person.avatar,
+          }
+        : null
+    );
     setLoadingMembers(false);
     setSubmitting(false);
     setError(null);
   }, [isOpen, department]);
+
+  useEffect(() => {
+    if (!isOpen || !department?.id) return;
+
+    const loadMembers = async () => {
+      try {
+        const departmentMembers = await getDepartmentMembersByDepartmentId(department.id);
+        const leader = departmentMembers.find((m) => m.role === 'LEADER');
+        if (leader) {
+          setSelectedMemberId(leader.user_id);
+          if (leader.user) {
+            setSelectedMember({
+              id: leader.user.id,
+              name: leader.user.name,
+              email: leader.user.email ?? '',
+              avatar: leader.user.avatar,
+            });
+          }
+        }
+      } catch (e: any) {
+        // ignore, modal can still work without preloaded team
+      }
+    };
+
+    loadMembers();
+  }, [isOpen, department?.id]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -103,21 +140,6 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
     });
   }, [members, memberQuery]);
 
-  const selectedMember = useMemo(() => {
-    if (!selectedMemberId) return null;
-    const found = members.find((m) => m.id === selectedMemberId);
-    if (found) return found;
-    if (department?.responsible_person?.id === selectedMemberId) {
-      return {
-        id: department.responsible_person.id,
-        name: department.responsible_person.name,
-        email: '',
-        avatar: department.responsible_person.avatar,
-      };
-    }
-    return null;
-  }, [members, selectedMemberId, department]);
-
   const handleSubmit = async () => {
     setError(null);
 
@@ -137,7 +159,6 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
     setSubmitting(true);
     try {
-      // RLS için net teşhis: insert anında auth session var mı?
       const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
       console.log('DepartmentModal submit session:', {
         hasSession: !!sessionData?.session,
@@ -158,11 +179,23 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
           description: description.trim() ? description.trim() : null,
           responsible_person_id: selectedMemberId,
         });
+
+        await setDepartmentMembers({
+          department_id: department.id,
+          memberIds: [selectedMemberId],
+          leaderId: selectedMemberId,
+        });
       } else {
         const created = await createDepartment({
           name: trimmedName,
           description: description.trim() ? description.trim() : null,
           responsible_person_id: selectedMemberId,
+        });
+
+        await setDepartmentMembers({
+          department_id: created.id,
+          memberIds: [selectedMemberId],
+          leaderId: selectedMemberId,
         });
 
         const to = selectedMember.email;
@@ -221,7 +254,7 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
     </table>
   </body>
 </html>
-            `.trim();
+          `.trim();
 
           await sendEmail(to, subject, html);
         }
@@ -242,7 +275,7 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />
 
       <div
-        className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-coal-900/95 shadow-3xl overflow-hidden"
+        className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-coal-900/95 shadow-3xl overflow-hidden max-h-[calc(100vh-4rem)]"
         style={{ background: isIceBlue ? 'rgba(255,255,255,0.92)' : undefined }}
       >
         <div className="p-6 border-b border-white/10 flex items-start justify-between gap-4">
@@ -269,7 +302,7 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-20rem)]">
           {error && (
             <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-200">
               {error}
@@ -327,7 +360,10 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
                           <button
                             key={m.id}
                             type="button"
-                            onClick={() => setSelectedMemberId(m.id)}
+                            onClick={() => {
+                        setSelectedMemberId(m.id);
+                        setSelectedMember(m);
+                      }}
                             className={`w-full text-left rounded-xl border px-3 py-2 flex items-center gap-3 transition-all ${
                               active
                                 ? 'bg-ice-500/15 border-ice-500/30'
@@ -368,6 +404,7 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
                 </div>
               )}
             </div>
+
 
             <div className="flex gap-3 pt-2">
               <button

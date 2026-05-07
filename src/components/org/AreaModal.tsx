@@ -60,58 +60,6 @@ export const AreaModal: React.FC<AreaModalProps> = ({
     return Array.from(ids);
   }, [selectedLeaderId, selectedTeamIds]);
 
-  const selectedLeader = useMemo(() => {
-    if (!selectedLeaderId) return null;
-    return (
-      leaderCandidates.find((m) => m.id === selectedLeaderId) ||
-      teamCandidates.find((m) => m.id === selectedLeaderId) ||
-      null
-    );
-  }, [leaderCandidates, teamCandidates, selectedLeaderId]);
-
-  // NOTE: this UI keeps chip list via MultiSelectInput component,
-  // but we still use DepartmentModal-like search + click to add.
-  // MultiSelectInput only needs options; we will merge candidates.
-  const selectedTeamOptions: Array<{ id: string; name: string }> = useMemo(() => {
-    const opts: Array<{ id: string; name: string }> = [];
-    const add = (m: MemberPick) => {
-      if (!allSelectedIds.includes(m.id)) return;
-      if (opts.find((x) => x.id === m.id)) return;
-      opts.push({ id: m.id, name: m.name });
-    };
-
-    teamCandidates.forEach(add);
-    leaderCandidates.forEach(add);
-
-    // if still missing (because candidate lists are query-limited), do a safe fallback
-    if (selectedLeaderId && !opts.find((o) => o.id === selectedLeaderId) && selectedLeader) {
-      opts.push({ id: selectedLeader.id, name: selectedLeader.name });
-    }
-
-    return opts;
-  }, [teamCandidates, leaderCandidates, allSelectedIds, selectedLeaderId, selectedLeader]);
-
-  const memberOptionsForMulti = useMemo(() => {
-    // MultiSelectInput expects all options and selectedIds.
-    // We'll provide options as union of candidates + selected picks (to ensure chips can render).
-    const byId = new Map<string, { id: string; name: string }>();
-    [...leaderCandidates, ...teamCandidates].forEach((m) => {
-      byId.set(m.id, { id: m.id, name: m.name });
-    });
-
-    if (selectedLeaderId) {
-      const fromLeader = byId.get(selectedLeaderId);
-      if (!fromLeader && selectedLeader) byId.set(selectedLeader.id, { id: selectedLeader.id, name: selectedLeader.name });
-    }
-
-    selectedTeamIds.forEach((id) => {
-      if (byId.has(id)) return;
-      // best-effort; MultiSelect chips will still work for candidates already present
-    });
-
-    return Array.from(byId.values());
-  }, [leaderCandidates, teamCandidates, selectedLeaderId, selectedLeader, selectedTeamIds]);
-
   const fetchLeaderCandidates = async (q: string) => {
     const query = q.trim();
     if (!query || query.length < 2) {
@@ -471,7 +419,7 @@ export const AreaModal: React.FC<AreaModalProps> = ({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />
 
       <div
-        className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-coal-900/95 shadow-3xl overflow-hidden"
+        className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-coal-900/95 shadow-3xl overflow-hidden max-h-[calc(100vh-4rem)]"
         style={{ background: isIceBlue ? 'rgba(255,255,255,0.92)' : undefined }}
       >
         <div className="p-6 border-b border-white/10 flex items-start justify-between gap-4">
@@ -494,7 +442,7 @@ export const AreaModal: React.FC<AreaModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-20rem)]">
           {error && (
             <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-200">
               {error}

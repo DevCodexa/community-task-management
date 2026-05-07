@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Calendar, Link2, Pencil, Plus, Trash2, Upload, Search } from 'lucide-react';
+import { ArrowLeft, Calendar, Eye, Link2, Pencil, Plus, Trash2, Upload, Search } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { getAreasByDepartmentId, getDepartments, getProjectsByAreaId, getAreaMembersByAreaId,  OrgProject, } from '../lib/supabaseOrgHierarchy';
+import { getAreasByDepartmentId, getDepartments, getProjectsByAreaId, getProjectMemberCountsByProjectIds, getAreaMembersByAreaId, OrgProject, } from '../lib/supabaseOrgHierarchy';
 import { ProjectModal } from '../components/org/ProjectModal';
+import { ProjectDetailModal } from '../components/org/ProjectDetailModal';
 
 export const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,8 +19,11 @@ export const ProjectsPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalProject, setModalProject] = useState<OrgProject | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailProject, setDetailProject] = useState<OrgProject | null>(null);
 
-  const [memberCountMap, setMemberCountMap] = useState<Map<string, number>>(new Map());
+  const [areaMemberCount, setAreaMemberCount] = useState<number>(0);
+  const [projectMemberCounts, setProjectMemberCounts] = useState<Map<string, number>>(new Map());
 
   const fetchAreaCrumbs = async () => {
     if (!areaId) return;
@@ -47,6 +51,9 @@ export const ProjectsPage: React.FC = () => {
       await fetchAreaCrumbs();
       const data = await getProjectsByAreaId(areaId);
       setProjects(data);
+
+      const counts = await getProjectMemberCountsByProjectIds(data.map((p) => p.id));
+      setProjectMemberCounts(counts);
     } catch (e: any) {
       setError(e?.message || 'Projeler yüklenemedi.');
     } finally {
@@ -59,28 +66,25 @@ export const ProjectsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [areaId]);
 
-  // Ekip sayısı: elimizde proje-personel tablosu yok; bu yüzden alan ekip sayısını projeye yansıtıyoruz.
-  // (DB şemasına göre proje üyeliği ayrı tutulmuyorsa, bu doğru olacaktır.)
+  // Proje ekip sayısı: proje-üye ilişkisi içeren bir tablo henüz yoksa
+  // alan üyeleri sayısıyla gösterilir.
   useEffect(() => {
     let active = true;
     (async () => {
       if (!areaId) return;
       try {
         const members = await getAreaMembersByAreaId(areaId);
-        const count = members.length;
         if (!active) return;
-        const map = new Map<string, number>();
-        projects.forEach((p) => map.set(p.id, count));
-        setMemberCountMap(map);
+        setAreaMemberCount(members.length);
+        console.log('Ürem Area member count:', members.length);
       } catch {
-        // ignore
+        // ignore failures and keep count at 0
       }
     })();
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [areaId, projects.length]);
+  }, [areaId]);
 
   const filteredProjects = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -126,6 +130,16 @@ export const ProjectsPage: React.FC = () => {
   const handleOpenEdit = (p: OrgProject) => {
     setModalProject(p);
     setIsModalOpen(true);
+  };
+
+  const handleOpenDetail = (p: OrgProject) => {
+    setDetailProject(p);
+    setIsDetailOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setDetailProject(null);
+    setIsDetailOpen(false);
   };
 
   return (
@@ -224,7 +238,7 @@ export const ProjectsPage: React.FC = () => {
                 <tbody className="divide-y divide-white/5">
                   {filteredProjects.map((p) => {
                     const status = computeStatus(p);
-                    const count = memberCountMap.get(p.id) ?? 0;
+                    const count = projectMemberCounts.get(p.id) ?? areaMemberCount;
 
                     return (
                       <tr key={p.id} className="group hover:bg-white/[0.03] transition-colors">
@@ -273,29 +287,37 @@ export const ProjectsPage: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
-                              onClick={() => handleOpenEdit(p)}
-                              className="text-sm font-semibold text-ice-300 hover:text-ice-200"
+                              onClick={() => handleOpenDetail(p)}
+                              className="p-2 rounded-lg text-silver-300 transition-transform duration-200 hover:scale-110 hover:text-silver-100 hover:bg-white/10"
+                              title="Detay Görüntüle"
+                              aria-label="Proje detayını görüntüle"
                             >
-                              <span className="inline-flex items-center gap-2">
-                                <Pencil className="h-4 w-4" />
-                                Güncelle
-                              </span>
+                              <Eye className="h-4 w-4" />
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(p)}
+                              className="p-2 rounded-lg text-ice-300 transition-transform duration-200 hover:scale-110 hover:text-ice-200 hover:bg-white/10"
+                              title="Güncelle"
+                              aria-label="Projeyi düzenle"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => {
-                                // silme modal içinde yapılacak; basit confirm
                                 const ok = window.confirm(`"${p.name}" projesini silmek istiyor musunuz?`);
                                 if (!ok) return;
                                 setModalProject(p);
                                 setIsModalOpen(true);
                               }}
-                              className="text-sm font-semibold text-red-300/80 hover:text-red-300"
+                              className="p-2 rounded-lg text-red-500 transition-transform duration-200 hover:scale-110 hover:text-red-400 hover:bg-white/10"
+                              title="Sil"
+                              aria-label="Projeyi sil"
                             >
-                              <span className="inline-flex items-center gap-2">
-                                <Trash2 className="h-4 w-4" />
-                                Sil
-                              </span>
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -308,6 +330,12 @@ export const ProjectsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <ProjectDetailModal
+        isOpen={isDetailOpen}
+        onClose={closeDetailModal}
+        project={detailProject}
+      />
 
       <ProjectModal
         isOpen={isModalOpen}

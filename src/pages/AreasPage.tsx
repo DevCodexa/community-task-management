@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Building2, ExternalLink, Pencil, Search, Trash2, Plus, Users } from 'lucide-react';
+import { ArrowLeft, Building2, ExternalLink, Eye, Pencil, Search, Trash2, Plus, Users } from 'lucide-react';
+import { AreaDetailModal } from '../components/org/AreaDetailModal';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -24,7 +25,10 @@ export const AreasPage: React.FC = () => {
   const [query, setQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [selectedArea, setSelectedArea] = useState<OrgArea | null>(null);
+  const [selectedDetailArea, setSelectedDetailArea] = useState<OrgArea | null>(null);
 
   const fetchDepartmentName = async (id: string) => {
     const depts = await getDepartments();
@@ -118,6 +122,26 @@ export const AreasPage: React.FC = () => {
   const openEditModal = (area: OrgArea) => {
     setSelectedArea(area);
     setIsModalOpen(true);
+  };
+
+  const openDetailModal = async (area: OrgArea) => {
+    setDetailLoading(true);
+    setError(null);
+
+    try {
+      const members = await getAreaMembersByAreaId(area.id);
+      setSelectedDetailArea({ ...area, members });
+      setIsDetailOpen(true);
+    } catch (e: any) {
+      setError(e?.message || 'Alan üyeleri yüklenemedi.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailOpen(false);
+    setSelectedDetailArea(null);
   };
 
   const handleDeleteArea = async (area: OrgArea) => {
@@ -233,6 +257,7 @@ export const AreasPage: React.FC = () => {
                     <th className="px-4 py-3 font-semibold">Alan Adı</th>
                     <th className="px-4 py-3 font-semibold">Açıklama</th>
                     <th className="px-4 py-3 font-semibold">Alan Lideri</th>
+                    <th className="px-4 py-3 font-semibold">Proje Sayısı</th>
                     <th className="px-4 py-3 font-semibold">Ekip Sayısı</th>
                     <th className="px-4 py-3 font-semibold">İşlemler</th>
                   </tr>
@@ -240,6 +265,7 @@ export const AreasPage: React.FC = () => {
                 <tbody className="divide-y divide-white/5">
                   {filteredAreas.map((area) => {
                     const memberCount = membersCountMap.get(area.id) ?? 0;
+                    const projectCount = area.projects?.length ?? 0;
 
                     return (
                       <tr key={area.id} className="group hover:bg-white/[0.03] transition-colors">
@@ -277,6 +303,13 @@ export const AreasPage: React.FC = () => {
                           </div>
                         </td>
 
+                        {/* Proje Sayısı */}
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/10 text-silver-200">
+                            {projectCount}
+                          </span>
+                        </td>
+
                         {/* Ekip Sayısı */}
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/10 text-silver-200">
@@ -287,6 +320,17 @@ export const AreasPage: React.FC = () => {
                         {/* İşlemler */}
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              className="p-2 rounded-lg text-ice-300 transition-transform duration-200 hover:scale-110 hover:text-ice-200 hover:bg-white/10"
+                              onClick={() => void openDetailModal(area)}
+                              title="Detay"
+                              aria-label="Alan detayını görüntüle"
+                              disabled={detailLoading}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+
                             <button
                               type="button"
                               className="p-2 rounded-lg text-silver-300 transition-transform duration-200 hover:scale-110 hover:text-silver-100 hover:bg-white/10"
@@ -329,6 +373,12 @@ export const AreasPage: React.FC = () => {
       </div>
 
       {/* Modal */}
+      <AreaDetailModal
+        isOpen={isDetailOpen}
+        onClose={closeDetailModal}
+        area={selectedDetailArea}
+      />
+
       <AreaModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

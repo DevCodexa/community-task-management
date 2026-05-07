@@ -22,7 +22,7 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
 
-      <div className="relative w-full max-w-xl rounded-3xl border border-white/10 bg-coal-800/95 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-xl rounded-3xl border border-white/10 bg-coal-800/95 shadow-2xl overflow-hidden max-h-[calc(100vh-4rem)]">
         <div className="p-6 border-b border-white/10 flex items-start justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-silver-500">Bölüm Detayı</p>
@@ -39,9 +39,8 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
-
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-20rem)]">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <p className="text-sm uppercase tracking-[0.18em] text-silver-500">Açıklama</p>
             <p className="mt-3 text-sm leading-7 text-silver-200">
               {department.description || 'Bölüm henüz açıklama eklemedi.'}
@@ -84,7 +83,34 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
             </div>
           </div>
 
-          
+         {/*} <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="text-sm uppercase tracking-[0.18em] text-silver-500">Departman Üyeleri</p>
+            {department.members && department.members.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {department.members.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full border border-white/10 bg-white/[0.03] overflow-hidden flex items-center justify-center">
+                        {member.user?.avatar ? (
+                          <img src={member.user.avatar} alt={member.user.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold text-silver-600">{member.user?.name?.[0]?.toUpperCase() ?? '—'}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-silver-100">{member.user?.name || 'Bilinmeyen Üye'}</p>
+                        <p className="text-xs text-silver-500">{member.role === 'LEADER' ? 'Lider' : 'Ekip Üyesi'}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-silver-500">{member.role}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-silver-500">Departmana atanmış üye yok.</p>
+            )}
+          </div>*/}
+
         </div>
 
         <div className="px-6 py-4 border-t border-white/10 flex justify-end">

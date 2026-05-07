@@ -3,7 +3,6 @@ import { X, Pencil, Trash2, Save, Search, UserCheck, } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { useTheme } from '../../context/ThemeContext';
 import { OrgProject, getAreaMembersByAreaId, createProject, updateProject, deleteProject } from '../../lib/supabaseOrgHierarchy';
-import { searchMembers } from '../../lib/supabaseMembers';
 import { supabase } from '../../lib/supabase';
 
 interface ProjectModalProps {
@@ -41,9 +40,6 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // restricted team selection: only members of this Area
-  const [areaMembers, setAreaMembers] = useState<CandidateMember[]>([]);
-
   const [memberQuery, setMemberQuery] = useState('');
   const [memberCandidates, setMemberCandidates] = useState<CandidateMember[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
@@ -64,8 +60,6 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     setMemberQuery('');
     setMemberCandidates([]);
     setSelectedMemberIds([]);
-
-    setAreaMembers([]);
     setSubmitting(false);
     setError(null);
 
@@ -77,28 +71,50 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       setStartDate(project.start_date ? new Date(project.start_date).toISOString().slice(0, 10) : '');
       setEndDate(project.end_date ? new Date(project.end_date).toISOString().slice(0, 10) : '');
     }
-
-    // load area members for restriction
-    (async () => {
-      if (!areaId) return;
-      const res = await getAreaMembersByAreaId(areaId);
-      const mapped: CandidateMember[] = (res || []).map((m: any) => ({
-        id: m.user_id,
-        name: m.user?.name || '—',
-        email: m.user?.email || '',
-        avatar: m.user?.avatar || '',
-      }));
-
-      // NOTE: user.email not selected in getAreaMembersByAreaId.
-      // We'll best-effort fill by searching when needed.
-      // For chips display, we only need name/avatar.
-      setAreaMembers(mapped);
-      setMemberCandidates(mapped);
-    })().catch((e: any) => {
-      setError(e?.message || 'Ekip üyeleri yüklenemedi.');
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, project?.id, areaId]);
+
+  useEffect(() => {
+    if (!isOpen || !areaId) return;
+
+    const query = memberQuery.trim().toLowerCase();
+    if (query.length < 2) {
+      setMemberCandidates([]);
+      return;
+    }
+
+    let active = true;
+
+    (async () => {
+      try {
+        const res = await getAreaMembersByAreaId(areaId);
+        const mapped: CandidateMember[] = (res || []).map((m: any) => ({
+          id: m.user_id,
+          name: m.user?.name || '—',
+          email: m.user?.email || '',
+          avatar: m.user?.avatar || '',
+        }));
+
+        if (!active) return;
+
+        const filtered = mapped.filter((member) => {
+          return (
+            member.name.toLowerCase().includes(query) ||
+            member.email.toLowerCase().includes(query)
+          );
+        });
+
+        setMemberCandidates(filtered);
+      } catch (e: any) {
+        if (!active) return;
+        setError(e?.message || 'Ekip üyeleri yüklenemedi.');
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, areaId, memberQuery]);
 
   const filteredAreaMembers = useMemo(() => {
     const q = memberQuery.trim().toLowerCase();
@@ -197,7 +213,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-coal-900/95 shadow-3xl overflow-hidden" style={{ background: isIceBlue ? 'rgba(255,255,255,0.92)' : undefined }}>
+      <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-coal-900/95 shadow-3xl overflow-hidden max-h-[calc(100vh-4rem)]" style={{ background: isIceBlue ? 'rgba(255,255,255,0.92)' : undefined }}>
         <div className="p-6 border-b border-white/10 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -218,7 +234,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-20rem)]">
           {error && (
             <div className="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-200">
               {error}
@@ -232,13 +248,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 label="Başlangıç"
-                type="date" as any
+                type="date"
                 value={startDate}
                 onChange={(e) => setStartDate((e.target as HTMLInputElement).value)}
               />
               <Input
                 label="Bitiş"
-                type="date" as any
+                type="date"
                 value={endDate}
                 onChange={(e) => setEndDate((e.target as HTMLInputElement).value)}
               />
@@ -252,13 +268,32 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-silver-500">Ekip</p>
-                  <p className="text-sm text-silver-400 mt-1">Sadece bu alanın üyeleri listelenir.</p>
+                  <p className="text-sm text-silver-400 mt-1">Alan içindeki üyelere göre seçin ve gerekli kişileri atayın.</p>
                 </div>
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-ice-500/20 bg-ice-500/10 text-ice-300">
                   <UserCheck className="h-3.5 w-3.5" />
                   {selectedMemberIds.length} seçili
                 </span>
               </div>
+
+              {selectedMemberIds.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {selectedMemberIds.map((id) => {
+                    const selectedMember = memberCandidates.find((m) => m.id === id);
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => toggleMember(id)}
+                        className="inline-flex items-center gap-2 rounded-full border border-ice-500/20 bg-ice-500/10 px-3 py-1 text-xs text-ice-100 hover:bg-ice-500/15 transition-all"
+                      >
+                        <span className="truncate max-w-[10rem]">{selectedMember?.name || 'Seçili Üye'}</span>
+                        <span aria-hidden="true">×</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-silver-600" />
