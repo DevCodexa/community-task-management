@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Search, Building2, Pencil, Trash2, Plus, Users } from 'lucide-react';
+import { ArrowLeft, Building2, ExternalLink, Pencil, Search, Trash2, Plus, Users } from 'lucide-react';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  deleteArea,
   getDepartments,
   getAreasByDepartmentId,
   getAreaMembersByAreaId,
@@ -117,6 +118,22 @@ export const AreasPage: React.FC = () => {
   const openEditModal = (area: OrgArea) => {
     setSelectedArea(area);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteArea = async (area: OrgArea) => {
+    const confirmed = window.confirm(`"${area.name}" alanını kalıcı olarak silmek istediğinize emin misiniz?`);
+    if (!confirmed) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await deleteArea(area.id);
+      await fetchAll();
+    } catch (e: any) {
+      setError(e?.message || 'Alan silinemedi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -272,34 +289,32 @@ export const AreasPage: React.FC = () => {
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
-                              className="text-sm font-semibold text-ice-300 hover:text-ice-200"
+                              className="p-2 rounded-lg text-silver-300 transition-transform duration-200 hover:scale-110 hover:text-silver-100 hover:bg-white/10"
                               onClick={() => navigate(`/organizasyon/alan/${area.id}/projeler`)}
+                              title="Projeler Sayfasına Git"
+                              aria-label="Projeler sayfasına git"
                             >
-                              Görüntüle
+                              <ExternalLink className="h-4 w-4" />
                             </button>
 
                             <button
                               type="button"
-                              className="text-sm font-semibold text-silver-300 hover:text-ice-300"
+                              className="p-2 rounded-lg text-blue-500 transition-transform duration-200 hover:scale-110 hover:text-blue-400 hover:bg-white/10"
                               onClick={() => openEditModal(area)}
                               title="Güncelle"
+                              aria-label="Alanı düzenle"
                             >
-                              <span className="inline-flex items-center gap-2">
-                                <Pencil className="h-4 w-4" />
-                                Güncelle
-                              </span>
+                              <Pencil className="h-4 w-4" />
                             </button>
 
                             <button
                               type="button"
-                              className="text-sm font-semibold text-red-300/80 hover:text-red-300"
-                              onClick={() => openEditModal(area)}
+                              className="p-2 rounded-lg text-red-500 transition-transform duration-200 hover:scale-110 hover:text-red-400 hover:bg-white/10"
+                              onClick={() => handleDeleteArea(area)}
                               title="Sil"
+                              aria-label="Alanı sil"
                             >
-                              <span className="inline-flex items-center gap-2">
-                                <Trash2 className="h-4 w-4" />
-                                Sil
-                              </span>
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>

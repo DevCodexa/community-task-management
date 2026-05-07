@@ -56,7 +56,7 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
                 className="h-4 w-4"
                 style={{ color: variant.text, filter: `drop-shadow(0 0 10px ${variant.glowRGBA2})` }}
               />
-              <h3 className="font-display text-lg font-bold tracking-tight text-silver-100 truncate">
+              <h3 className="font-display text-lg font-bold tracking-tight text-silver-200 truncate">
                 {department.name}
               </h3>
             </div>
@@ -153,11 +153,19 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
               {responsible ? 'Sorumlu kişi' : 'Lütfen sorumlu atayın'}
             </p>
           </div>
-           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
-  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/20 text-amber-200 shadow-[0_0_24px_rgba(251,191,36,0.2)]">
-    →
-  </span>
-</div>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
+            <span
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-white/[0.08] text-silver-100 shadow-[0_0_24px_rgba(0,0,0,0.10)] transition-colors duration-200"
+              style={{
+                color: variant.text,
+                borderColor: variant.border,
+                background: variant.gradientFrom,
+                boxShadow: `0 0 24px ${variant.glowRGBA2}`,
+              }}
+            >
+              →
+            </span>
+          </div>
         </div>
       </div>
 

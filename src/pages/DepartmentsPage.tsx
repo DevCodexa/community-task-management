@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Building2, LayoutGrid, List, Plus, Search, User } from 'lucide-react';
+import { ArrowLeft, Building2, ExternalLink, Eye, LayoutGrid, List, Pencil, Plus, Search, Trash2, User } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
 import { getDepartments, deleteDepartment, OrgDepartment } from '../lib/supabaseOrgHierarchy';
@@ -211,7 +211,7 @@ export const DepartmentsPage: React.FC = () => {
                     <th className="px-4 py-3 font-semibold">Bölüm Adı</th>
                     <th className="px-4 py-3 font-semibold">Açıklama</th>
                     <th className="px-4 py-3 font-semibold">Sorumlu Kişi</th>
-                    <th className="px-4 py-3 font-semibold">Oluşturulma</th>
+                    {/*<th className="px-4 py-3 font-semibold">Oluşturulma</th>*/}
                     <th className="px-4 py-3 font-semibold">İşlemler</th>
                   </tr>
                 </thead>
@@ -259,44 +259,61 @@ export const DepartmentsPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4">
+                      {/*<td className="px-4 py-4">
                         <div className="text-sm text-silver-600">
                           {dept.created_at ? new Date(dept.created_at).toLocaleDateString('tr-TR') : '—'}
                         </div>
-                      </td>
+                      </td>*/}
                       <td className="px-4 py-4">
-                        <div className="flex flex-wrap items-center gap-3 opacity-100 group-hover:opacity-100">
+                        <div className="flex items-center gap-3">
                           <button
                             type="button"
-                            className="text-sm font-semibold text-ice-300 hover:text-ice-200"
+                            className="p-2 rounded-lg text-ice-300 transition-transform duration-200 hover:scale-110 hover:text-ice-200 hover:bg-white/10"
                             onClick={(e) => {
                               e.stopPropagation();
                               openDetail(dept);
                             }}
+                            title="Detay"
+                            aria-label="Bölüm Detayını Görüntüle"
                           >
-                            Detay
+                            <Eye className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
-                            className="text-sm font-semibold text-amber-300 hover:text-amber-200"
+                            className="p-2 rounded-lg text-blue-500 transition-transform duration-200 hover:scale-110 hover:text-blue-400 hover:bg-white/10"
                             onClick={(e) => {
                               e.stopPropagation();
                               openEdit(dept);
                             }}
+                            title="Düzenle"
+                            aria-label="Bölümü Düzenle"
                           >
-                            Düzenle
+                            <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
-                            className="text-sm font-semibold text-red-300/80 hover:text-red-300"
+                            className="p-2 rounded-lg text-red-500 transition-transform duration-200 hover:scale-110 hover:text-red-400 hover:bg-white/10"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteDepartment(dept);
                             }}
+                            title="Sil"
+                            aria-label="Bölümü Sil"
                           >
-                            Sil
+                            <Trash2 className="h-4 w-4" />
                           </button>
-                          
+                          <button
+                            type="button"
+                            className="p-2 rounded-lg text-silver-300 transition-transform duration-200 hover:scale-110 hover:text-silver-100 hover:bg-white/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/organizasyon/bolum/${dept.id}/alanlar`);
+                            }}
+                            title="Alanlara Git"
+                            aria-label="Alanlar sayfasına git"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
