@@ -27,7 +27,7 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-silver-500">Bölüm Detayı</p>
             <h2 className="mt-2 text-2xl font-bold text-silver-100">{department.name}</h2>
-            <p className="mt-2 text-sm text-silver-500">{department.description || 'Bu bölüm için bir açıklama bulunmuyor.'}</p>
+            {/*<p className="mt-2 text-sm text-silver-500">{department.description || 'Bu bölüm için bir açıklama bulunmuyor.'}</p>*/}
           </div>
 
           <button
@@ -40,6 +40,13 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
         </div>
 
         <div className="p-6 space-y-6">
+
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="text-sm uppercase tracking-[0.18em] text-silver-500">Açıklama</p>
+            <p className="mt-3 text-sm leading-7 text-silver-200">
+              {department.description || 'Bölüm henüz açıklama eklemedi.'}
+            </p>
+          </div>
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
@@ -77,12 +84,7 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-sm uppercase tracking-[0.18em] text-silver-500">Açıklama</p>
-            <p className="mt-3 text-sm leading-7 text-silver-200">
-              {department.description || 'Bölüm henüz açıklama eklemedi.'}
-            </p>
-          </div>
+          
         </div>
 
         <div className="px-6 py-4 border-t border-white/10 flex justify-end">
