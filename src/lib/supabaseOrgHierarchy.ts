@@ -196,6 +196,53 @@ export const createArea = async (payload: {
   };
 };
 
+export const updateArea = async (payload: {
+  area_id: string;
+  name: string;
+  description?: string | null;
+  area_leader_id: string;
+}): Promise<OrgArea> => {
+  const { data, error } = await supabase
+    .from('org_areas')
+    .update({
+      name: payload.name,
+      description: payload.description ?? null,
+      area_leader_id: payload.area_leader_id,
+    })
+    .eq('id', payload.area_id)
+    .select(
+      `*,
+       area_leader:members(id, name, avatar)`
+    )
+    .single();
+
+  if (error) throwError(error);
+
+  return {
+    ...data,
+    area_leader: (data as any).area_leader ?? null,
+    members: [],
+  };
+};
+
+export const deleteArea = async (areaId: string): Promise<void> => {
+  // İlişki tabloları için DB cascade yoksa; önce org_area_members temizlenir.
+  // (RLS/policy bağlı olarak delete iki adım gerektirebilir.)
+  const { error: delMembersErr } = await supabase
+    .from('org_area_members')
+    .delete()
+    .eq('area_id', areaId);
+
+  if (delMembersErr) throwError(delMembersErr);
+
+  const { error: delErr } = await supabase
+    .from('org_areas')
+    .delete()
+    .eq('id', areaId);
+
+  if (delErr) throwError(delErr);
+};
+
 // Area üyeleri atanır (many-to-many): org_area_members
 // Geri Git mantığı: areaId üzerinden çağrılır.
 export const setAreaMembers = async (payload: {
@@ -292,4 +339,45 @@ export const createProject = async (payload: {
 
   return data;
 };
+
+
+export const updateProject = async (payload: {
+  project_id: string;
+  area_id: string;
+  name: string;
+  description?: string | null;
+  file_url?: string | null;
+  external_url?: string | null;
+  start_date?: string | null; // 'YYYY-MM-DD'
+  end_date?: string | null; // 'YYYY-MM-DD'
+}): Promise<OrgProject> => {
+  const { data, error } = await supabase
+    .from('org_projects')
+    .update({
+      area_id: payload.area_id,
+      name: payload.name,
+      description: payload.description ?? null,
+      file_url: payload.file_url ?? null,
+      external_url: payload.external_url ?? null,
+      start_date: payload.start_date ?? null,
+      end_date: payload.end_date ?? null,
+    })
+    .eq('id', payload.project_id)
+    .select('*')
+    .single();
+
+  if (error) throwError(error);
+
+  return data;
+};
+
+export const deleteProject = async (projectId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('org_projects')
+    .delete()
+    .eq('id', projectId);
+
+  if (error) throwError(error);
+};
+
 

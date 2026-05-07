@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Plus, Search, User } from 'lucide-react';
+import { ArrowLeft, Building2, LayoutGrid, List, Plus, Search, User } from 'lucide-react';
+
+
+
 import { useNavigate } from 'react-router-dom';
 import { getDepartments } from '../lib/supabaseOrgHierarchy';
 import { OrgDepartmentCard } from '../components/org/OrgDepartmentCard';
@@ -15,6 +18,9 @@ export const DepartmentsPage: React.FC = () => {
 
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
 
   const fetchDepartments = async () => {
     setLoading(true);
@@ -70,13 +76,44 @@ export const DepartmentsPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-ice-500/20 to-ice-500/10 border border-ice-500/20 px-5 py-3 text-sm font-semibold text-ice-300 hover:bg-gradient-to-r from-ice-500/25 to-ice-500/15 hover:border-ice-500/30 transition-all shadow-[0_0_40px_rgba(116,192,252,0.08)]"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Bölüm
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-ice-500/20 to-ice-500/10 border border-ice-500/20 px-5 py-3 text-sm font-semibold text-ice-300 hover:bg-gradient-to-r from-ice-500/25 to-ice-500/15 hover:border-ice-500/30 transition-all shadow-[0_0_40px_rgba(116,192,252,0.08)]"
+          >
+            <Plus className="h-4 w-4" />
+            Yeni Bölüm
+          </button>
+
+          <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.03] p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                viewMode === 'cards'
+                  ? 'bg-white/[0.06] text-silver-100 border border-white/15 shadow-[0_0_0_rgba(0,0,0,0)]'
+                  : 'text-silver-400 hover:text-silver-200'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Kart Görünümü
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                viewMode === 'table'
+                  ? 'bg-white/[0.06] text-silver-100 border border-white/15 shadow-[0_0_0_rgba(0,0,0,0)]'
+                  : 'text-silver-400 hover:text-silver-200'
+              }`}
+            >
+              <List className="h-4 w-4" />
+              Tablo Görünümü
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Search */}
@@ -109,7 +146,7 @@ export const DepartmentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Cards */}
+      {/* View */}
       <div className="glass-card rounded-3xl p-1">
         <div className="p-1 sm:p-4">
           {loading ? (
@@ -126,21 +163,111 @@ export const DepartmentsPage: React.FC = () => {
                 Arama kriterlerinizi değiştirmeyi deneyin.
               </p>
             </div>
+          ) : viewMode === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left">
+                <thead>
+                  <tr className="text-xs text-silver-600">
+                    <th className="px-4 py-3 font-semibold">Bölüm Adı</th>
+                    <th className="px-4 py-3 font-semibold">Açıklama</th>
+                    <th className="px-4 py-3 font-semibold">Sorumlu Kişi</th>
+                    <th className="px-4 py-3 font-semibold">Oluşturulma</th>
+                    <th className="px-4 py-3 font-semibold">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredDepartments.map((dept) => (
+                    <tr
+                      key={dept.id}
+                      className="group hover:bg-white/[0.03] transition-colors"
+                      onClick={() => navigate(`/organizasyon/bolum/${dept.id}/alanlar`)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl border border-white/10 bg-white/[0.03] flex items-center justify-center">
+                            <Building2 className="h-4 w-4 text-ice-300" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-silver-100 truncate">{dept.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-silver-600 line-clamp-1">{dept.description || '—'}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full border border-white/10 bg-white/[0.03] overflow-hidden flex items-center justify-center shrink-0">
+                            {dept.responsible_person?.avatar ? (
+                              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                              <img
+                                src={dept.responsible_person.avatar}
+                                alt={dept.responsible_person.name}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-white/[0.05] flex items-center justify-center text-silver-600 text-xs font-bold">
+                                {(dept.responsible_person?.name?.[0] || '—').toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-silver-100 truncate">{dept.responsible_person?.name || 'Atanmadı'}</div>
+                            <div className="text-xs text-silver-600 truncate">Sorumlu</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-silver-600">
+                          {dept.created_at ? new Date(dept.created_at).toLocaleDateString('tr-TR') : '—'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3 opacity-100 group-hover:opacity-100">
+                          <button
+                            type="button"
+                            className="text-sm font-semibold text-ice-300 hover:text-ice-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/organizasyon/bolum/${dept.id}/alanlar`);
+                            }}
+                          >
+                            Görüntüle
+                          </button>
+                          <button
+                            type="button"
+                            className="text-sm font-semibold text-red-300/80 hover:text-red-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Delete: henüz API bağlanmadı (mevcut task için sadece placeholder)
+                              alert('Silme işlemi bu ekranda henüz aktif değil.');
+                            }}
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredDepartments.map((dept) => (
                 <OrgDepartmentCard
                   key={dept.id}
                   department={dept}
-                  onClick={() =>
-                    navigate(`/organizasyon/bolum/${dept.id}/alanlar`)
-                  }
+                  onClick={() => navigate(`/organizasyon/bolum/${dept.id}/alanlar`)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
 
       {/* Modal */}
       <DepartmentModal

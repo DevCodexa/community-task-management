@@ -13,11 +13,12 @@ import { UserProfileProvider } from './context/UserProfileContext'
 import { AuthRedirector } from './context/AuthRedirector'
 import { DepartmentsPage } from './pages/DepartmentsPage'
 import { AreasPagePlaceholder } from './pages/AreasPagePlaceholder'
-import { ProjectsPagePlaceholder } from './pages/ProjectsPagePlaceholder'
+import { AreasPage } from './pages/AreasPage'
 
-
+import { ProjectsPage } from './pages/ProjectsPage'
 
 function App() {
+
   return (
     <ThemeProvider>
       <UserProfileProvider>
@@ -29,8 +30,10 @@ function App() {
             <Route path="/uyeler" element={<Layout><MembersPage /></Layout>} />
 
             <Route path="/organizasyon/bolumler" element={<Layout><DepartmentsPage /></Layout>} />
-            <Route path="/organizasyon/bolum/:deptId/alanlar" element={<Layout><AreasPagePlaceholder /></Layout>} />
-            <Route path="/organizasyon/alan/:areaId/projeler" element={<Layout><ProjectsPagePlaceholder /></Layout>} />
+            <Route path="/organizasyon/bolum/:deptId/alanlar" element={<Layout><AreasPage /></Layout>} />
+
+            <Route path="/organizasyon/alan/:areaId/projeler" element={<Layout><ProjectsPage /></Layout>} />
+
             <Route path="/dogum-gunleri" element={<Layout><BirthdaysPage /></Layout>} />
             <Route path="/gorev-zinciri" element={<Layout><TasksPage /></Layout>} />
             <Route path="/linkler" element={<Layout><LinksPage /></Layout>} />
