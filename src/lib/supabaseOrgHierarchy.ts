@@ -16,6 +16,7 @@ const throwError = (error: any): never => {
 
 export type AreaMemberRole = 'LEADER' | 'TEAM_MEMBER';
 export type DepartmentMemberRole = 'LEADER' | 'TEAM_MEMBER';
+export type ProjectMemberRole = 'LEADER' | 'TEAM_MEMBER';
 
 export interface OrgDepartmentMember {
   id: string;
@@ -126,6 +127,70 @@ export const getProjectMemberCountsByProjectIds = async (projectIds: string[]): 
   });
 
   return counts;
+};
+
+export const setProjectMembers = async (payload: {
+  project_id: string;
+  memberIds: string[];
+  // Ekip rol/leader ayrımı UI'de yok; şimdilik TEAM_MEMBER yazıyoruz.
+  leaderId?: string | null;
+}): Promise<void> => {
+  // Mevcut kayıtları sil (RLS/DELETE policy ile uyumlu olmalı)
+  const { error: delErr } = await supabase
+    .from('org_project_members')
+    .delete()
+    .eq('project_id', payload.project_id);
+
+  if (delErr) throwError(delErr);
+
+  // UI boş kaydetmek isterse sadece projeyi güncelleyip relation'ı temiz bırak.
+  if (!payload.memberIds.length) return;
+
+  const leaderId = payload.leaderId ?? null;
+
+  const rows = payload.memberIds.map((userId) => ({
+    project_id: payload.project_id,
+    user_id: userId,
+    role: leaderId && leaderId === userId ? 'LEADER' : 'TEAM_MEMBER',
+  }));
+
+  // UPDATE sırasında RLS politikaya takılmamak için tek bir insert isteği atıyoruz.
+  const { error: insErr } = await supabase
+    .from('org_project_members')
+    .insert(rows);
+
+  if (insErr) throwError(insErr);
+};
+
+export interface OrgProjectMember {
+  id: string;
+  project_id: string;
+  user_id: string;
+  role: ProjectMemberRole;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+
+  user?: {
+    id: string;
+    name: string;
+    avatar: string;
+    email?: string | null;
+  } | null;
+}
+
+export const getProjectMembersByProjectId = async (projectId: string): Promise<OrgProjectMember[]> => {
+  const { data, error } = await supabase
+    .from('org_project_members')
+    .select(`*, user:members(id, name, avatar, email)`)
+    .eq('project_id', projectId);
+
+  if (error) throwError(error);
+
+  return (data || []).map((m: any) => ({
+    ...m,
+    user: m.user ?? null,
+  }));
 };
 
 // ------------------------------------------------------------

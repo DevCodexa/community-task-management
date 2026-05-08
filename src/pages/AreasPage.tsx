@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Building2, ExternalLink, Eye, Pencil, Search, Trash2, Plus, Users } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Eye, Pencil, Search, Trash2, Plus, Users } from 'lucide-react';
 import { AreaDetailModal } from '../components/org/AreaDetailModal';
 
 import { useNavigate, useParams } from 'react-router-dom';
@@ -17,7 +17,7 @@ export const AreasPage: React.FC = () => {
   const navigate = useNavigate();
   const { deptId } = useParams<{ deptId: string }>();
 
-  const [departmentName, setDepartmentName] = useState<string>('Bölüm');
+  const [departmentName, setDepartmentName] = useState<string>('Alanlar');
   const [areas, setAreas] = useState<OrgArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export const AreasPage: React.FC = () => {
 
   const fetchAll = async () => {
     if (!deptId) {
-      setError('Bölüm ID bulunamadı.');
+      setError('Alan ID bulunamadı.');
       setLoading(false);
       return;
     }
@@ -170,10 +170,31 @@ export const AreasPage: React.FC = () => {
             className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-silver-100 hover:bg-white/[0.06] hover:border-white/20 transition-all"
           >
             <ArrowLeft className="h-4 w-4 text-ice-300" />
-            Bölümlere Dön
+            Bölümler
           </button>
-
           <div>
+            {/* Breadcrumb / Heading */}
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-silver-600">Bölümler</span>
+                <span className="text-silver-500">›</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/organizasyon/bolumler')}
+                  className="text-ice-300 hover:text-ice-200 font-semibold"
+                >
+                  {departmentName}
+                </button>
+                <span className="text-silver-500">›</span>
+                {/*<span className="font-semibold text-silver-100">{areaName}</span>*/}
+              </div>
+
+              <h1 className="font-display text-2xl font-bold tracking-tight text-silver-100 sm:text-3xl mt-1">Alanlar</h1>
+              <p className="mt-1 text-sm text-silver-600">Alanlarınızı yönetin ve ekip atamalarını gerçekleştirin.</p>
+            </div>
+          </div>
+
+          {/*<div>
             <div className="flex items-center gap-2">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
                 <Building2 className="h-4 w-4 text-ice-300" />
@@ -183,13 +204,13 @@ export const AreasPage: React.FC = () => {
               </h1>
             </div>
             <p className="mt-1 text-sm text-silver-600">Alanlarınızı yönetin ve ekip atamalarını gerçekleştirin.</p>
-          </div>
+          </div>*/}
         </div>
 
         {/* Top Bar (right side) */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/organizasyon/bolumler')}
+            onClick={() => navigate('/dashboard')}
             className="sm:hidden inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-silver-100 hover:bg-white/[0.06] hover:border-white/20 transition-all"
             aria-label="Geri Git"
           >
@@ -333,16 +354,6 @@ export const AreasPage: React.FC = () => {
 
                             <button
                               type="button"
-                              className="p-2 rounded-lg text-silver-300 transition-transform duration-200 hover:scale-110 hover:text-silver-100 hover:bg-white/10"
-                              onClick={() => navigate(`/organizasyon/alan/${area.id}/projeler`)}
-                              title="Projeler Sayfasına Git"
-                              aria-label="Projeler sayfasına git"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </button>
-
-                            <button
-                              type="button"
                               className="p-2 rounded-lg text-blue-500 transition-transform duration-200 hover:scale-110 hover:text-blue-400 hover:bg-white/10"
                               onClick={() => openEditModal(area)}
                               title="Güncelle"
@@ -359,6 +370,16 @@ export const AreasPage: React.FC = () => {
                               aria-label="Alanı sil"
                             >
                               <Trash2 className="h-4 w-4" />
+                            </button>
+
+                            <button
+                              type="button"
+                              className="p-2 rounded-lg text-silver-300 transition-transform duration-200 hover:scale-110 hover:text-silver-100 hover:bg-white/10"
+                              onClick={() => navigate(`/organizasyon/alan/${area.id}/projeler`)}
+                              title="Projeler Sayfasına Git"
+                              aria-label="Projeler sayfasına git"
+                            >
+                              <ExternalLink className="h-4 w-4" />
                             </button>
                           </div>
                         </td>

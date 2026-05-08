@@ -76,7 +76,6 @@ export const ProjectsPage: React.FC = () => {
         const members = await getAreaMembersByAreaId(areaId);
         if (!active) return;
         setAreaMemberCount(members.length);
-        console.log('Ürem Area member count:', members.length);
       } catch {
         // ignore failures and keep count at 0
       }
@@ -107,19 +106,19 @@ export const ProjectsPage: React.FC = () => {
 
     // Bu sistemde start_date null gelirse "Başlamadı" kabul ediyoruz.
     if (!start) {
-      return { label: 'Başlamadı', className: 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20' };
+      return { label: 'Başlamadı', className: 'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/20' };
     }
 
     if (start && end && end < now) {
-      return { label: 'Tamamlandı', className: 'bg-silver-500/10 text-silver-400 ring-1 ring-white/15' };
+      return { label: 'Tamamlandı', className: 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' };
     }
 
     if (start && (!end || (now >= start && end >= now))) {
-      return { label: 'Devam Ediyor', className: 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' };
+      return { label: 'Devam Ediyor', className: 'bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20' };
     }
 
     // now < start
-    return { label: 'Başlamadı', className: 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20' };
+    return { label: 'Başlamadı', className: 'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/20' };
   };
 
   const handleOpenCreate = () => {
@@ -148,29 +147,53 @@ export const ProjectsPage: React.FC = () => {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/organizasyon/bolumler`) }
+            type="button"
+            onClick={async () => {
+              if (!areaId) return;
+              try {
+                // Back to "Alanlar": /organizasyon/bolum/:deptId/alanlar
+                // areaId -> department_id mapping yoksa, departman listesini tarayıp alanı buluyoruz.
+                const depts = await getDepartments();
+                for (const d of depts) {
+                  const areas = await getAreasByDepartmentId(d.id);
+                  const found = areas.find((a) => a.id === areaId);
+                  if (found) {
+                    navigate(`/organizasyon/bolum/${d.id}/alanlar`);
+                    return;
+                  }
+                }
+                // Bulunamazsa güvenli fallback: departmanlar sayfası
+                navigate('/organizasyon/bolumler');
+              } catch {
+                navigate('/organizasyon/bolumler');
+              }
+            }}
             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-silver-100 hover:bg-white/[0.06] hover:border-white/20 transition-all"
           >
             <ArrowLeft className="h-4 w-4 text-ice-300" />
-            Bölümlere
+            Alanlar
           </button>
 
           <div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-silver-600">Bölümler</span>
-              <span className="text-silver-500">›</span>
-              <button
-                type="button"
-                onClick={() => navigate('/organizasyon/bolumler')}
-                className="text-ice-300 hover:text-ice-200 font-semibold"
-              >
-                {departmentName}
-              </button>
-              <span className="text-silver-500">›</span>
-              <span className="font-semibold text-silver-100">{areaName}</span>
+            {/* Breadcrumb / Heading */}
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-silver-600">Bölümler1</span>
+                <span className="text-silver-500">›</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/organizasyon/bolumler')}
+                  className="text-ice-300 hover:text-ice-200 font-semibold"
+                >
+                  {departmentName}
+                </button>
+                <span className="text-silver-500">›</span>
+                <span className="font-semibold text-silver-100">{areaName}</span>
+              </div>
+
+              <h1 className="font-display text-2xl font-bold tracking-tight text-silver-100 sm:text-3xl mt-1">Projeler</h1>
+              <p className="mt-1 text-sm text-silver-600">Projeleri ekleyin, güncelleyin ve yönetin.</p>
             </div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-silver-100 sm:text-3xl mt-1">Projeler</h1>
-            <p className="mt-1 text-sm text-silver-600">Projeleri ekleyin, güncelleyin ve yönetin.</p>
           </div>
         </div>
 
@@ -238,7 +261,8 @@ export const ProjectsPage: React.FC = () => {
                 <tbody className="divide-y divide-white/5">
                   {filteredProjects.map((p) => {
                     const status = computeStatus(p);
-                    const count = projectMemberCounts.get(p.id) ?? areaMemberCount;
+                    const count = projectMemberCounts.get(p.id) ?? 0;
+
 
                     return (
                       <tr key={p.id} className="group hover:bg-white/[0.03] transition-colors">

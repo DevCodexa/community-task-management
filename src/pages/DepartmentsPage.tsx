@@ -107,12 +107,23 @@ export const DepartmentsPage: React.FC = () => {
           </button>
 
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-silver-100 sm:text-3xl">
-              Bölümler
-            </h1>
-            <p className="mt-1 text-sm text-silver-600">
-              Topluluğun bölümlerini yönetin.
-            </p>
+        <div>
+            {/* Breadcrumb / Heading */}
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-silver-600">Bölümler</span>
+                <span className="text-silver-500">›</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/organizasyon/bolumler')}
+                  className="text-ice-300 hover:text-ice-200 font-semibold">
+                </button>
+              </div>
+
+              <h1 className="font-display text-2xl font-bold tracking-tight text-silver-100 sm:text-3xl mt-1">Bölümler</h1>
+              <p className="mt-1 text-sm text-silver-600">Projeleri ekleyin, güncelleyin ve yönetin.</p>
+            </div>
+          </div>
           </div>
         </div>
 

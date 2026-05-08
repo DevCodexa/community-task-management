@@ -12,7 +12,6 @@ import { ThemeProvider } from './context/ThemeContext'
 import { UserProfileProvider } from './context/UserProfileContext'
 import { AuthRedirector } from './context/AuthRedirector'
 import { DepartmentsPage } from './pages/DepartmentsPage'
-import { AreasPagePlaceholder } from './pages/AreasPagePlaceholder'
 import { AreasPage } from './pages/AreasPage'
 
 import { ProjectsPage } from './pages/ProjectsPage'
@@ -31,7 +30,6 @@ function App() {
 
             <Route path="/organizasyon/bolumler" element={<Layout><DepartmentsPage /></Layout>} />
             <Route path="/organizasyon/bolum/:deptId/alanlar" element={<Layout><AreasPage /></Layout>} />
-
             <Route path="/organizasyon/alan/:areaId/projeler" element={<Layout><ProjectsPage /></Layout>} />
 
             <Route path="/dogum-gunleri" element={<Layout><BirthdaysPage /></Layout>} />

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link2, Upload, X } from 'lucide-react';
-import { OrgProject } from '../../lib/supabaseOrgHierarchy';
+import { getProjectMembersByProjectId, OrgProject, OrgProjectMember } from '../../lib/supabaseOrgHierarchy';
 
 interface ProjectDetailModalProps {
   isOpen: boolean;
@@ -9,6 +9,35 @@ interface ProjectDetailModalProps {
 }
 
 export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, onClose, project }) => {
+  const [teamMembers, setTeamMembers] = useState<OrgProjectMember[]>([]);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  const [teamError, setTeamError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!project) return;
+
+    (async () => {
+      setLoadingTeam(true);
+      setTeamError(null);
+      try {
+        const members = await getProjectMembersByProjectId(project.id);
+        if (!active) return;
+        setTeamMembers(members);
+      } catch (error: any) {
+        if (!active) return;
+        console.warn('Projeye ait ekip yüklenemedi:', error);
+        setTeamError('Ekip bilgisi yüklenemedi.');
+      } finally {
+        if (active) setLoadingTeam(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [project]);
+
   if (!isOpen || !project) return null;
 
   const statusLabel = (() => {
@@ -77,6 +106,25 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, 
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <p className="text-sm uppercase tracking-[0.18em] text-silver-500">Ekip</p>
+            {loadingTeam ? (
+              <p className="mt-3 text-sm text-silver-500">Ekip yükleniyor...</p>
+            ) : teamError ? (
+              <p className="mt-3 text-sm text-red-400">{teamError}</p>
+            ) : teamMembers.length === 0 ? (
+              <p className="mt-3 text-sm text-silver-400">Bu projeye henüz üye eklenmemiş.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {teamMembers.map((member) => (
+                  <li key={member.id} className="rounded-2xl border border-white/10 bg-coal-900/70 px-4 py-3 text-sm text-silver-100">
+                    {member.user?.name || 'Ad Soyad bulunamadı'}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 

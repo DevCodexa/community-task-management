@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Pencil, Trash2, Save, Search, UserCheck, } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { useTheme } from '../../context/ThemeContext';
-import { OrgProject, getAreaMembersByAreaId, createProject, updateProject, deleteProject } from '../../lib/supabaseOrgHierarchy';
+import { OrgProject, getAreaMembersByAreaId, createProject, updateProject, deleteProject, setProjectMembers } from '../../lib/supabaseOrgHierarchy';
 import { supabase } from '../../lib/supabase';
 
 interface ProjectModalProps {
@@ -160,17 +160,27 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       if (mode === 'create') {
         const created = await createProject(payload);
 
-        // Project üyeleri için şema yoksa (org_projects_members gibi), kayıt atlanır.
-        // Mevcut tasarım yalnızca area ekibini kısıtlamak için UI sağlar.
-        // Eğer DB’de proje üyelik tablosu eklenecekse burada set edilecek.
-        void created;
+        // Proje üye ataması
+        if (selectedMemberIds.length) {
+          await setProjectMembers({
+            project_id: created.id,
+            memberIds: selectedMemberIds,
+          });
+        }
       } else {
         if (!project?.id) throw new Error('Güncellenecek proje bulunamadı.');
         await updateProject({
           project_id: project.id,
           ...payload,
         } as any);
+
+        // Proje üye ataması (edit sırasında da sync)
+        await setProjectMembers({
+          project_id: project.id,
+          memberIds: selectedMemberIds,
+        });
       }
+
 
       onSuccess();
       onClose();
