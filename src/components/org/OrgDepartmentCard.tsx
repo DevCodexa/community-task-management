@@ -22,10 +22,11 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
   const variant = getColorVariantById(department.id || department.name);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="group relative w-full text-left rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:bg-white/[0.05] hover:border-white/15"
+      className="group relative w-full text-left rounded-3xl border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:bg-white/[0.05] hover:border-white/15"
     >
       <div
         aria-hidden="true"
@@ -42,81 +43,34 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300"
         style={{
           boxShadow: `0 0 0 0 rgba(0,0,0,0), 0 18px 60px ${variant.glowRGBA2}`,
         }}
       />
 
-      <div className="relative">
-        <div className="flex items-start justify-between gap-4">
+      <div className="relative pb-6">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <Building2
                 className="h-4 w-4"
                 style={{ color: variant.text, filter: `drop-shadow(0 0 10px ${variant.glowRGBA2})` }}
               />
-              <h3 className="font-display text-lg font-bold tracking-tight text-silver-200 truncate">
+              <h3 className="font-display text-base font-bold tracking-tight text-silver-200 truncate">
                 {department.name}
               </h3>
             </div>
 
             {department.description ? (
-              <p className="mt-2 text-sm text-silver-600 line-clamp-2">
+              <p className="mt-1 text-sm text-silver-600 line-clamp-2">
                 {department.description}
               </p>
             ) : (
-              <p className="mt-2 text-sm text-silver-600 line-clamp-2">
+              <p className="mt-1 text-sm text-silver-600 line-clamp-2">
                 Açıklama yok
               </p>
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onView();
-              }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-silver-100 transition-all duration-200 hover:scale-105 hover:bg-white/[0.12] hover:text-ice-100"
-              style={{
-                color: variant.text,
-                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
-              }}
-              aria-label="Detay Görüntüle"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-silver-100 transition-all duration-200 hover:scale-105 hover:bg-white/[0.12] hover:text-ice-100"
-              style={{
-                color: variant.text,
-                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
-              }}
-              aria-label="Düzenle"
-            >
-              <Edit3 className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-silver-100 transition-all duration-200 hover:scale-105 hover:bg-red-500/10 hover:text-red-300"
-              style={{
-                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
-              }}
-              aria-label="Sil"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
           </div>
         </div>
 
@@ -153,19 +107,67 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
               {responsible ? 'Sorumlu kişi' : 'Lütfen sorumlu atayın'}
             </p>
           </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
-            <span
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-white/[0.08] text-silver-100 shadow-[0_0_24px_rgba(0,0,0,0.10)] transition-colors duration-200"
-              style={{
-                color: variant.text,
-                borderColor: variant.border,
-                background: variant.gradientFrom,
-                boxShadow: `0 0 24px ${variant.glowRGBA2}`,
-              }}
-            >
-              →
-            </span>
-          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView();
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.08] text-silver-100 transition-all duration-200 hover:bg-white/[0.16] hover:text-white"
+            style={{
+              color: variant.text,
+              boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+            }}
+            aria-label="Detay Görüntüle"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.08] text-silver-100 transition-all duration-200 hover:bg-white/[0.16] hover:text-white"
+            style={{
+              color: variant.text,
+              boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+            }}
+            aria-label="Düzenle"
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.08] text-silver-100 transition-all duration-200 hover:bg-red-500/15 hover:text-red-300"
+            style={{
+              boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+            }}
+            aria-label="Sil"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
+          <span
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-white/[0.08] text-silver-100 shadow-[0_0_24px_rgba(0,0,0,0.10)] transition-colors duration-200"
+            style={{
+              color: variant.text,
+              borderColor: variant.border,
+              background: variant.gradientFrom,
+              boxShadow: `0 0 24px ${variant.glowRGBA2}`,
+            }}
+          >
+            →
+          </span>
         </div>
       </div>
 
@@ -175,7 +177,7 @@ export const OrgDepartmentCard: React.FC<OrgDepartmentCardProps> = ({
           boxShadow: `0 14px 50px ${variant.glowRGBA2}`,
         }}
       />
-    </button>
+    </div>
   );
 };
 

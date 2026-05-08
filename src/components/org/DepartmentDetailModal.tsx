@@ -46,10 +46,10 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
               {department.description || 'Bölüm henüz açıklama eklemedi.'}
             </p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/[0.05] border border-white/10 overflow-hidden">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-2">
+            <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/[0.05] border border-white/10 overflow-hidden">
                   {responsible?.avatar ? (
                     <img
                       src={responsible.avatar}
@@ -62,21 +62,21 @@ export const DepartmentDetailModal: React.FC<DepartmentDetailModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-silver-500">Sorumlu Kişi</p>
-                  <p className="text-xl font-semibold text-silver-100">{responsible?.name || 'Atanmadı'}</p>
+                  <p className="text-xs text-silver-500">Sorumlu Kişi</p>
+                  <p className="text-xs font-semibold text-silver-100">{responsible?.name || 'Atanmadı'}</p>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8">
                 <p className="text-xs uppercase tracking-[0.18em] text-silver-500">Bilgiler</p>
                 <div className="mt-3 space-y-2">
                   <div>
                     <p className="text-xs text-silver-500">E-posta</p>
-                    <p className="text-sm text-silver-100">{responsible?.email || 'Belirtilmemiş'}</p>
+                    <p className="text-xs text-silver-100">{responsible?.email || 'Belirtilmemiş'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-silver-500">Bölüm</p>
-                    <p className="text-sm text-silver-100">{department.name}</p>
+                    <p className="text-xs text-silver-100">{department.name}</p>
                   </div>
                 </div>
               </div>
