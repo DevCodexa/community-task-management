@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Calendar, Eye, Link2, Pencil, Plus, Trash2, Upload, Search } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { getAreasByDepartmentId, getDepartments, getProjectsByAreaId, getProjectMemberCountsByProjectIds, getAreaMembersByAreaId, OrgProject, } from '../lib/supabaseOrgHierarchy';
+import { getAreasByDepartmentId, getDepartments, getProjectsByAreaId, getProjectMemberCountsByProjectIds, OrgProject, } from '../lib/supabaseOrgHierarchy';
 import { ProjectModal } from '../components/org/ProjectModal';
 import { ProjectDetailModal } from '../components/org/ProjectDetailModal';
 
@@ -17,12 +17,13 @@ export const ProjectsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalProject, setModalProject] = useState<OrgProject | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailProject, setDetailProject] = useState<OrgProject | null>(null);
 
-  const [areaMemberCount, setAreaMemberCount] = useState<number>(0);
   const [projectMemberCounts, setProjectMemberCounts] = useState<Map<string, number>>(new Map());
 
   const fetchAreaCrumbs = async () => {
@@ -66,25 +67,6 @@ export const ProjectsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [areaId]);
 
-  // Proje ekip sayısı: proje-üye ilişkisi içeren bir tablo henüz yoksa
-  // alan üyeleri sayısıyla gösterilir.
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!areaId) return;
-      try {
-        const members = await getAreaMembersByAreaId(areaId);
-        if (!active) return;
-        setAreaMemberCount(members.length);
-      } catch {
-        // ignore failures and keep count at 0
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [areaId]);
-
   const filteredProjects = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return projects;
@@ -97,6 +79,22 @@ export const ProjectsPage: React.FC = () => {
       );
     });
   }, [projects, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
+  const pagedProjects = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProjects.slice(start, start + pageSize);
+  }, [filteredProjects, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, projects.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const computeStatus = (p: OrgProject): { label: string; className: string } => {
     const now = new Date();
@@ -247,8 +245,9 @@ export const ProjectsPage: React.FC = () => {
               <p className="text-sm text-silver-600 mt-1">Arama kriterlerinizi değiştirmeyi deneyin.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left">
                 <thead>
                   <tr className="text-xs text-silver-600">
                     <th className="px-4 py-3 font-semibold">Proje Adı & Açıklama</th>
@@ -259,7 +258,7 @@ export const ProjectsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {filteredProjects.map((p) => {
+                  {pagedProjects.map((p) => {
                     const status = computeStatus(p);
                     const count = projectMemberCounts.get(p.id) ?? 0;
 
@@ -350,6 +349,34 @@ export const ProjectsPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="border-t border-white/10 bg-white/5 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-silver-400">
+                Toplam {filteredProjects.length} projeden {pagedProjects.length} gösteriliyor.
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+                >
+                  Önceki
+                </button>
+                <span className="text-sm text-silver-300">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+                >
+                  Sonraki
+                </button>
+              </div>
+            </div>
             </div>
           )}
         </div>

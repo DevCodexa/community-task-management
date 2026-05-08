@@ -23,6 +23,8 @@ export const AreasPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -113,6 +115,22 @@ export const AreasPage: React.FC = () => {
       );
     });
   }, [areas, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAreas.length / pageSize));
+  const pagedAreas = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAreas.slice(start, start + pageSize);
+  }, [filteredAreas, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, areas.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const openCreateModal = () => {
     setSelectedArea(null);
@@ -271,8 +289,9 @@ export const AreasPage: React.FC = () => {
               <p className="text-sm text-silver-600 mt-1">Arama kriterlerinizi değiştirmeyi deneyin.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left">
                 <thead>
                   <tr className="text-xs text-silver-600">
                     <th className="px-4 py-3 font-semibold">Alan Adı</th>
@@ -284,7 +303,7 @@ export const AreasPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {filteredAreas.map((area) => {
+                  {pagedAreas.map((area) => {
                     const memberCount = membersCountMap.get(area.id) ?? 0;
                     const projectCount = area.projects?.length ?? 0;
 
@@ -388,6 +407,34 @@ export const AreasPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="border-t border-white/10 bg-white/5 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-silver-400">
+                Toplam {filteredAreas.length} alandan {pagedAreas.length} gösteriliyor.
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+                >
+                  Önceki
+                </button>
+                <span className="text-sm text-silver-300">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+                >
+                  Sonraki
+                </button>
+              </div>
+            </div>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2, Eye, UserX } from 'lucide-react';
 import { Speaker } from '../../types/speaker';
 
@@ -37,6 +37,26 @@ export const SpeakerTable: React.FC<SpeakerTableProps> = ({
   onDelete,
   onDetail,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  const totalPages = Math.max(1, Math.ceil(speakers.length / pageSize));
+
+  const pagedSpeakers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return speakers.slice(start, start + pageSize);
+  }, [speakers, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [speakers.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full text-left border-collapse">
@@ -67,7 +87,7 @@ export const SpeakerTable: React.FC<SpeakerTableProps> = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-white/[0.03]">
-          {speakers.map((speaker) => (
+          {pagedSpeakers.map((speaker) => (
             <tr
               key={speaker.id}
               className="group transition-all duration-200 hover:bg-white/[0.015]"
@@ -177,6 +197,39 @@ export const SpeakerTable: React.FC<SpeakerTableProps> = ({
           ))}
         </tbody>
       </table>
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-silver-400">
+        <div>
+          {speakers.length > 0 ? (
+            <span>
+              {`${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, speakers.length)} / ${speakers.length} konuşmacı gösteriliyor`}
+            </span>
+          ) : (
+            <span>Her sayfada en fazla 10 konuşmacı gösterilir.</span>
+          )}
+        </div>
+        {speakers.length > 0 && (
+          <div className="inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/5"
+            >
+              Önceki
+            </button>
+            <span className="min-w-[4rem] text-center">{`${currentPage} / ${totalPages}`}</span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/5"
+            >
+              Sonraki
+            </button>
+          </div>
+        )}
+      </div>
 
       {speakers.length === 0 && (
         <div className="py-16 text-center">

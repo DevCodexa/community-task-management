@@ -15,6 +15,8 @@ export const DepartmentsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -53,6 +55,22 @@ export const DepartmentsPage: React.FC = () => {
       );
     });
   }, [departments, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredDepartments.length / pageSize));
+  const pagedDepartments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredDepartments.slice(start, start + pageSize);
+  }, [filteredDepartments, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, departments.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const openDetail = (department: OrgDepartment) => {
     setSelectedDepartment(department);
@@ -215,8 +233,9 @@ export const DepartmentsPage: React.FC = () => {
               </p>
             </div>
           ) : viewMode === 'table' ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left">
                 <thead>
                   <tr className="text-xs text-silver-600">
                     <th className="px-4 py-3 font-semibold">Bölüm Adı</th>
@@ -227,7 +246,7 @@ export const DepartmentsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {filteredDepartments.map((dept) => (
+                  {pagedDepartments.map((dept) => (
                     <tr
                       key={dept.id}
                       className="group hover:bg-white/[0.03] transition-colors"
@@ -332,6 +351,36 @@ export const DepartmentsPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {viewMode === 'table' && (
+              <div className="border-t border-white/10 bg-white/5 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-silver-400">
+                  Toplam {filteredDepartments.length} bölüm içerisinden {pagedDepartments.length} gösteriliyor.
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+                  >
+                    Önceki
+                  </button>
+                  <span className="text-sm text-silver-300">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+                  >
+                    Sonraki
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredDepartments.map((dept) => (

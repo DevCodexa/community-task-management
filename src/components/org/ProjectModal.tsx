@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Pencil, Trash2, Save, Search, UserCheck, } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { useTheme } from '../../context/ThemeContext';
-import { OrgProject, getAreaMembersByAreaId, createProject, updateProject, deleteProject, setProjectMembers } from '../../lib/supabaseOrgHierarchy';
+import { OrgProject, getAreaMembersByAreaId, getProjectMembersByProjectId, createProject, updateProject, deleteProject, setProjectMembers } from '../../lib/supabaseOrgHierarchy';
 import { supabase } from '../../lib/supabase';
 
 interface ProjectModalProps {
@@ -43,6 +43,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const [memberQuery, setMemberQuery] = useState('');
   const [memberCandidates, setMemberCandidates] = useState<CandidateMember[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<CandidateMember[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     setMemberQuery('');
     setMemberCandidates([]);
     setSelectedMemberIds([]);
+    setSelectedMembers([]);
     setSubmitting(false);
     setError(null);
 
@@ -70,6 +72,25 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       setExternalUrl(project.external_url || '');
       setStartDate(project.start_date ? new Date(project.start_date).toISOString().slice(0, 10) : '');
       setEndDate(project.end_date ? new Date(project.end_date).toISOString().slice(0, 10) : '');
+
+      (async () => {
+        try {
+          const members = await getProjectMembersByProjectId(project.id);
+          const cleaned = (members || [])
+            .filter((m) => m.user?.id)
+            .map((m) => ({
+              id: m.user!.id,
+              name: m.user!.name,
+              email: m.user?.email || '',
+              avatar: m.user?.avatar || '',
+            }));
+
+          setSelectedMemberIds(cleaned.map((m) => m.id));
+          setSelectedMembers(cleaned);
+        } catch (e) {
+          // ignore; team can still be selected manually
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, project?.id, areaId]);
@@ -125,10 +146,17 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     });
   }, [memberCandidates, memberQuery]);
 
-  const toggleMember = (id: string) => {
+  const toggleMember = (member: CandidateMember) => {
     setSelectedMemberIds((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      return [...prev, id];
+      if (prev.includes(member.id)) return prev.filter((x) => x !== member.id);
+      return [...prev, member.id];
+    });
+
+    setSelectedMembers((prev) => {
+      if (prev.some((m) => m.id === member.id)) {
+        return prev.filter((m) => m.id !== member.id);
+      }
+      return [...prev, member];
     });
   };
 
@@ -288,20 +316,17 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
               {selectedMemberIds.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
-                  {selectedMemberIds.map((id) => {
-                    const selectedMember = memberCandidates.find((m) => m.id === id);
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => toggleMember(id)}
-                        className="inline-flex items-center gap-2 rounded-full border border-ice-500/20 bg-ice-500/10 px-3 py-1 text-xs text-ice-100 hover:bg-ice-500/15 transition-all"
-                      >
-                        <span className="truncate max-w-[10rem]">{selectedMember?.name || 'Seçili Üye'}</span>
-                        <span aria-hidden="true">×</span>
-                      </button>
-                    );
-                  })}
+                  {selectedMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => toggleMember(member)}
+                      className="inline-flex items-center gap-2 rounded-full border border-ice-500/20 bg-ice-500/10 px-3 py-1 text-xs text-ice-100 hover:bg-ice-500/15 transition-all"
+                    >
+                      <span className="truncate max-w-[10rem]">{member.name}</span>
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -326,7 +351,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => toggleMember(m.id)}
+                          onClick={() => toggleMember(m)}
                           className={`w-full text-left rounded-xl border px-3 py-2 flex items-center gap-3 transition-all ${
                             active ? 'bg-ice-500/15 border-ice-500/30' : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.04]'
                           }`}

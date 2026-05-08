@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { User } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -45,6 +44,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const filteredTasks = useMemo(() => {
     let filtered = tasks.filter(task =>
@@ -59,16 +60,21 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     return filtered;
   }, [tasks, searchQuery, statusFilter]);
 
-  const getStatusColor = (status: TaskStatus) => {
-    const colors = {
-      backlog: 'gray',
-      started: 'yellow',
-      'in_progress': 'orange',
-      completed: 'green',
-      done: 'darkgreen'
-    };
-    return colors[status];
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, tasks.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
+  const pagedTasks = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredTasks.slice(start, start + pageSize);
+  }, [filteredTasks, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('tr-TR');
 
@@ -136,7 +142,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {filteredTasks.map((task) => {
+              {pagedTasks.map((task) => {
                 const isOverdueTask = isOverdue(task);
                 const isLateComp = isLateCompleted(task);
                 return (
@@ -244,7 +250,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                   </tr>
                 );
               })}
-              {filteredTasks.length === 0 && (
+              {pagedTasks.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-16 text-center">
                     <AlertCircle className="h-12 w-12 text-silver-600 mx-auto mb-4 opacity-50" />
@@ -255,6 +261,37 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="border-t border-white/10 bg-white/5 px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-silver-400">
+          <div>
+            {filteredTasks.length > 0 ? (
+              <span>
+                {`${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredTasks.length)} / ${filteredTasks.length} görev gösteriliyor`}
+              </span>
+            ) : (
+              <span>Her sayfada en fazla 10 görev gösterilir.</span>
+            )}
+          </div>
+          <div className="inline-flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/5"
+            >
+              Önceki
+            </button>
+            <span className="min-w-[4rem] text-center">{`${currentPage} / ${totalPages}`}</span>
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/5"
+            >
+              Sonraki
+            </button>
+          </div>
         </div>
       </div>
     </div>
