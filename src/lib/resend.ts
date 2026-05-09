@@ -5,11 +5,11 @@
 /**
  * Resend API wrapper for sending emails
  * Uses VITE_RESEND_API_KEY from environment variables
- * 
+ *
  * IMPORTANT: Resend requires either:
  * 1. A verified domain (paid plan)
  * 2. Use the test domain: onboarding@resend.dev
- * 
+ *
  * For testing, all emails go to your own registered email in Resend dashboard
  */
 
@@ -30,7 +30,7 @@ export interface ResendResponse {
  * Send an email using Resend API
  * @param to - Recipient email address
  * @param subject - Email subject
-* @param html - HTML content of the email
+ * @param html - HTML content of the email
  */
 export const sendEmail = async (
   to: string,
@@ -62,7 +62,7 @@ export const sendEmail = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         from: fromAddress,
@@ -73,7 +73,7 @@ export const sendEmail = async (
     });
 
     const responseData = await response.json();
-    
+
     if (!response.ok) {
       console.error('❌ Edge Function Error:', responseData);
       return { success: false, error: responseData.error || 'Edge function error' };
@@ -89,7 +89,7 @@ export const sendEmail = async (
 
 /**
  * Send task assignment email (wrapper with pre-built template)
- * @param to - Recipient email address  
+ * @param to - Recipient email address
  * @param memberName - Recipient name
  * @param taskTitle - Task title
  * @param taskDescription - Task description
@@ -117,6 +117,28 @@ export const sendTaskAssignmentEmail = async (
     `🎯 Yeni Görev: ${taskTitle}`,
     html
   );
+};
+
+/**
+ * Send onboarding email to a newly created member
+ * - Trigger: members tablosuna YENİ kayıt atılınca (createMember)
+ * - Bu mailin update akışına girmemesi için çağrı noktası sadece createMember içinde olmalı
+ */
+export const sendNewMemberWelcomeEmail = async (
+  to: string,
+  memberName: string,
+  commTitle: string | null,
+  profileUrl: string
+): Promise<ResendResponse> => {
+  const subject = 'Aramıza Hoş Geldin! ✨ Seninle Tanıştığımıza Çok Mutluyuz';
+
+  const html = generateNewMemberWelcomeEmailHtml(
+    memberName,
+    commTitle,
+    profileUrl
+  );
+
+  return sendEmail(to, subject, html);
 };
 
 /**
@@ -188,7 +210,7 @@ const generateTaskAssignmentEmailHtml = (
                       ${taskDescription}
                     </p>
                     ` : ''}
-                    
+
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         ${taskDeadline ? `
@@ -241,6 +263,101 @@ const generateTaskAssignmentEmailHtml = (
 };
 
 /**
+ * Generate HTML for onboarding welcome email
+ * - Logo/topluluk isim placeholder’ları için aşağıdaki yorumları güncellemen yeterli olacak.
+ */
+const generateNewMemberWelcomeEmailHtml = (
+  memberName: string,
+  commTitle: string | null,
+  profileUrl: string
+): string => {
+  const safeCommTitle = (commTitle && commTitle.trim()) ? commTitle.trim() : 'Luminary';
+
+  // TODO: LOGO PLACEHOLDER
+  // Burada logo <img src="..."> eklemek istersen güncelle.
+  const placeholderLogo = ``;
+
+  return `
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aramıza Hoş Geldin!</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f0f1a;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f0f1a; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #1a1a2e; border-radius: 16px; overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 28px 40px; text-align: center; background: linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%);">
+              ${placeholderLogo}
+              <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
+                Aramıza Hoş Geldin! ✨
+              </h1>
+              <p style="margin: 8px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.85);">
+                Seninle Tanıştığımıza Çok Mutluyuz
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 18px 0; font-size: 16px; color: #e0e0e0;">
+                Merhaba <strong style="color: #0D8ABC;">${memberName}</strong> 👋
+              </p>
+
+              <p style="margin: 0 0 18px 0; font-size: 15px; color: #a0a0a0; line-height: 1.7;">
+                <strong>${safeCommTitle}</strong> topluluğunun bir parçası olduğun için çok heyecanlıyız. 🌟
+              </p>
+
+              <p style="margin: 0 0 26px 0; font-size: 15px; color: #a0a0a0; line-height: 1.7;">
+                Burada seni bekleyen harika bir ekip ve birlikte başaracağımız çok şey var! 🚀
+                <br/>
+                Hazırsan ilk adımı hemen atalım.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${profileUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; border-radius: 10px;">
+                      Hadi Başlayalım! →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 22px 0 0 0; font-size: 12px; color: #6a6a8a; line-height: 1.6; text-align: center;">
+                İpucu: Profil sayfanıza geçip kendinizi tanıttığınızda işler daha da hızlanır 😊
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 22px 40px; text-align: center; border-top: 1px solid #3a3a5a;">
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6a6a8a;">
+                Bu e-posta otomatik olarak gönderildi. Lütfen bu e-posta’ya yanıt vermeyin.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #4a4a6a;">
+                © ${new Date().getFullYear()} Zincir Atarlı Task Management
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+};
+
+/**
  * Check if Resend is properly configured
  */
 export const isResendConfigured = (): boolean => {
@@ -254,7 +371,7 @@ export const getResendStatus = (): { configured: boolean; keyPrefix: string } =>
   if (!RESEND_API_KEY) {
     return { configured: false, keyPrefix: '' };
   }
-  
+
   // Show last 4 characters
   const masked = RESEND_API_KEY.slice(-4);
   return { configured: true, keyPrefix: `...${masked}` };
@@ -263,3 +380,4 @@ export const getResendStatus = (): { configured: boolean; keyPrefix: string } =>
 // ===========================================================
 // END OF RESEND SERVICE
 // ===========================================================
+

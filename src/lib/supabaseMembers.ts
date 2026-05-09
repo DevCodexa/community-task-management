@@ -36,7 +36,7 @@ const handleError = (error: any): MemberError => {
 };
 
 /**
- * Hata fırlatır (throw)
+ * Hata fırlat (throw)
  */
 const throwError = (error: any): never => {
   const memberError = handleError(error);
@@ -103,9 +103,9 @@ export const validateMemberData = (data: Partial<MemberFormData>): ValidationRes
     errors.push('İş ünvanı en fazla 100 karakter olabilir');
   }
 
-  // Topluluk ünvanı kontrolü
+  // Topluluk unvanı kontrolü
   if (data.comm_title !== undefined && data.comm_title.length > 100) {
-    errors.push('Topluluk ünvanı en fazla 100 karakter olabilir');
+    errors.push('Topluluk unvanı en fazla 100 karakter olabilir');
   }
 
   // Biyografi kontrolü
@@ -179,7 +179,7 @@ export const getMembers = async (params?: MemberQueryParams): Promise<PaginatedM
     query = query.eq('system_role', system_role);
   }
 
-  // Topluluk ünvanı filtresi
+  // Topluluk unvanı filtresi
   if (comm_title) {
     query = query.ilike('comm_title', `%${comm_title}%`);
   }
@@ -322,7 +322,7 @@ const calculateDaysUntilBirthday = (
     }
     // Geçen ay için gelecek yılı hesapla
     const daysInCurrentMonth = new Date(new Date().getFullYear(), currentMonth, 0).getDate();
-    return (daysInCurrentMonth - currentDay) + birthDay + 
+    return (daysInCurrentMonth - currentDay) + birthDay +
            (birthMonth === 12 ? 31 : new Date(new Date().getFullYear(), birthMonth + 1, 0).getDate());
   }
 
@@ -393,6 +393,32 @@ export const createMember = async (memberData: MemberFormData): Promise<FullMemb
     }
     throwError(error);
   }
+
+  // ------------------------------
+  // Onboarding mail trigger (YENİ KAYIT)
+  // Fire-and-forget yapıyoruz ki UX etkilenmesin.
+  // Bu kod updateMember içinde değil; createMember içinde.
+  // ------------------------------
+  try {
+    const { sendNewMemberWelcomeEmail } = await import('./resend');
+
+    // Frontend route şu an /profil (placeholder). İleride değişirse burayı güncelle.
+    const profileUrl = 'https://community-tasks.vercel.app/profil';
+
+    // Comm title yoksa resend.ts otomatik placeholder kullanır.
+    // Fire-and-forget: createMember UX'ini bozmamak için await etmiyoruz.
+    sendNewMemberWelcomeEmail(
+      data.email,
+      data.name,
+      data.comm_title,
+      profileUrl
+    ).catch((err: any) => {
+      console.warn('Yeni üye onboarding mail gönderimi başarısız:', err);
+    });
+  } catch (err) {
+    console.warn('Yeni üye onboarding mail import başarısız:', err);
+  }
+
 
   return data;
 };
@@ -548,7 +574,7 @@ export const getMemberStats = async (): Promise<MemberStats> => {
 // -----------------------------------------------------------
 
 /**
- * Üyenin görev alıp alamayacağını kontrol et
+ * Üyenin görev alıp alamayacağını kontrol eder
  */
 export const canTakeTask = async (id: string): Promise<boolean> => {
   const member = await getMemberById(id);
@@ -565,9 +591,9 @@ export const getRemainingTaskCapacity = async (id: string): Promise<number> => {
   return member.total_tasks - member.active_tasks;
 };
 
-// ============================================================
+// -----------------------------------------------------------
 // 9. DASHBOARD SERVICE (Yeni Eklenen)
-// ============================================================
+// -----------------------------------------------------------
 
 export interface RecentMember {
   id: string;
@@ -603,3 +629,4 @@ export const getRecentMembers = async (limit: number = 5): Promise<RecentMember[
 // ============================================================
 // END OF CRUD SERVICE
 // ============================================================
+

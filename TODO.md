@@ -1,15 +1,12 @@
-# TODO - Proje üye ataması (org_project_members)
+# TODO - Yeni Üye Karşılama (Onboarding) Mail Sistemi
 
-## Plan
-1. DB: `org_project_members` tablosu + indeks + unique constraint oluştur.
-2. DB: RLS policy’leri ekle (insert/select/delete gerekebilir).
-3. Backend: `src/lib/supabaseOrgHierarchy.ts`
-   - `setProjectMembers(payload)` fonksiyonunu ekle (project_id + memberIds).
-   - `createProject` ve `updateProject` sonrası proje üyeliklerini yaz.
-4. Frontend: `src/components/org/ProjectModal.tsx`
-   - `handleSubmit` içinde `selectedMemberIds` boş değilse `setProjectMembers` çağır.
-5. (Opsiyonel) Proje silince `org_project_members` cascade silinsin (FK ON DELETE CASCADE).
-6. Test: 
-   - Alanlar sayfasında member seç → Proje ekle → Proje sayfasında ekip sayısı artık 0 olmamalı.
-   - Proje düzenle: member değiştirince sync olmalı.
+- [x] src/lib/resend.ts içine Yeni Üye Onboarding mail template’i + gönderim fonksiyonu ekle
+
+- [x] Logo/topluluk placeholder’ları için kod içi yorumlar bırak
+- [x] src/lib/supabaseMembers.ts içindeki createMember fonksiyonuna mail tetikleyici ekle (sadece create akışında)
+- [x] Mail butonu metnini: "Hadi Başlayalım!"
+- [x] Mail buton linki: /profil (frontend route yoksa placeholder olarak hazırla)
+- [ ] E-posta gönderimini fire-and-forget yap (createMember UX’i bozulmasın)
+- [x] Tür/format doğrulaması için `npm run build` veya `npm run typecheck` çalıştır
+
 
