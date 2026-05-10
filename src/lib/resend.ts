@@ -271,11 +271,33 @@ const generateNewMemberWelcomeEmailHtml = (
   commTitle: string | null,
   profileUrl: string
 ): string => {
-  const safeCommTitle = (commTitle && commTitle.trim()) ? commTitle.trim() : 'Luminary';
+  const trimmedCommTitle = (commTitle && commTitle.trim()) ? commTitle.trim() : '';
+  const safeCommTitle = trimmedCommTitle || 'Inovasyon';
 
   // TODO: LOGO PLACEHOLDER
   // Burada logo <img src="..."> eklemek istersen güncelle.
   const placeholderLogo = ``;
+
+  // Unvan bazlı kişiselleştirme
+  const hasCommTitle = !!trimmedCommTitle;
+  const commBadgeHtml = hasCommTitle
+    ? `<span style="display:inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(13, 138, 188, 0.15); border: 1px solid rgba(13, 138, 188, 0.35); color: #d1f0ff; font-weight: 800; font-size: 13px; letter-spacing: 0.2px;">${trimmedCommTitle}</span>`
+    : '';
+
+  const roleParagraphHtml = hasCommTitle
+    ? `
+              <p style="margin: 0 0 18px 0; font-size: 15px; color: #a0a0a0; line-height: 1.7;">
+                Topluluğumuzda <strong style="color: #ffffff;">${trimmedCommTitle}</strong> olarak atanman bizleri çok heyecanlandırdı! 🎉
+                <br/>
+                Yeni görevin hayırlı olsun! 🌈
+              </p>
+            `
+    : `
+              <p style="margin: 0 0 18px 0; font-size: 15px; color: #a0a0a0; line-height: 1.7;">
+                Yeni üyemiz olarak aramıza hoş geldin! ✨
+              </p>
+            `;
+
 
   return `
 <!DOCTYPE html>

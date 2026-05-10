@@ -876,7 +876,7 @@ Mevcut Yük: ${M}/${R}`);return}}try{await kT(F.id,{status:O}),await w()}catch(M
   </table>
 </body>
 </html>
-  `.trim()},Upe=(e,t,r)=>{const n=t&&t.trim()?t.trim():"Luminary";return`
+  `.trim()},Upe=(e,t,r)=>{const i=(t&&t.trim()?t.trim():"")||"Luminary";return`
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -910,7 +910,7 @@ Mevcut Yük: ${M}/${R}`);return}}try{await kT(F.id,{status:O}),await w()}catch(M
               </p>
 
               <p style="margin: 0 0 18px 0; font-size: 15px; color: #a0a0a0; line-height: 1.7;">
-                <strong>${n}</strong> topluluğunun bir parçası olduğun için çok heyecanlıyız. 🌟
+                <strong>${i}</strong> topluluğunun bir parçası olduğun için çok heyecanlıyız. 🌟
               </p>
 
               <p style="margin: 0 0 26px 0; font-size: 15px; color: #a0a0a0; line-height: 1.7;">
