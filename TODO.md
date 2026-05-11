@@ -1,15 +1,9 @@
-# TODO - Proje üye ataması (org_project_members)
-
-## Plan
-1. DB: `org_project_members` tablosu + indeks + unique constraint oluştur.
-2. DB: RLS policy’leri ekle (insert/select/delete gerekebilir).
-3. Backend: `src/lib/supabaseOrgHierarchy.ts`
-   - `setProjectMembers(payload)` fonksiyonunu ekle (project_id + memberIds).
-   - `createProject` ve `updateProject` sonrası proje üyeliklerini yaz.
-4. Frontend: `src/components/org/ProjectModal.tsx`
-   - `handleSubmit` içinde `selectedMemberIds` boş değilse `setProjectMembers` çağır.
-5. (Opsiyonel) Proje silince `org_project_members` cascade silinsin (FK ON DELETE CASCADE).
-6. Test: 
-   - Alanlar sayfasında member seç → Proje ekle → Proje sayfasında ekip sayısı artık 0 olmamalı.
-   - Proje düzenle: member değiştirince sync olmalı.
+- [ ] Repo genelinde `resend` kalıntılarını bul ve listele (src/lib ve supabase/functions + SQL + dokümanlar)
+- [ ] `src/lib/resend.ts` dosyasını kaldır (artık kullanılmıyor olmalı)
+- [ ] `supabase/functions/resend-email` klasörünü kaldır (edge function artık kullanılmıyor olmalı)
+- [ ] `dist/` build çıktılarını temizle ve tekrar build al (minify edilmiş JS içindeki resend kalıntıları kalkmalı)
+- [ ] Görev/üyelik bildirimlerini tetikleyen DB Trigger veya Edge Function’ları bul
+- [ ] Bildirim tetikleyicilerinden çıkan mail akışını yeni `supabase/functions/brevo-email` endpoint’ine yönlendir
+- [ ] Tüm mail trafiğini Brevo SMTP merkezli tek yapı yap (tek wrapper / tek endpoint)
+- [ ] Build/test çalıştır ve “task assign + new member” mail trafiğini doğrula
 
