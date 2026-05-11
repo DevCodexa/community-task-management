@@ -24,6 +24,8 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Supabase edge functions için gerekli auth header
+        // (CORS preflight'da “ok olmayan” yanıtın asıl sebebi genelde authorization/route değil, env/edge function config olabilir)
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({

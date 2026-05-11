@@ -3,6 +3,19 @@
 @tailwind utilities;
 
 :root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #eff2f7;
+  --bg-tertiary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: rgba(15, 23, 42, 0.08);
+  --accent: #2563eb;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme='dark'] {
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
   --bg-tertiary: #1a1a1a;
@@ -12,6 +25,32 @@
   --text-muted: #6c757d;
   --border-color: rgba(255, 255, 255, 0.06);
   --accent: #74c0fc;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme='iceBlue'] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-tertiary: #1a1a1a;
+  --bg-card: #222222;
+  --text-primary: #e9ecef;
+  --text-secondary: #adb5bd;
+  --text-muted: #6c757d;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --accent: #74c0fc;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme='blueMor'] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-tertiary: #1a1a1a;
+  --bg-card: #222222;
+  --text-primary: #e9ecef;
+  --text-secondary: #adb5bd;
+  --text-muted: #6c757d;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --accent: #a855f7;
   --glass-bg: rgba(255, 255, 255, 0.03);
 }
 
