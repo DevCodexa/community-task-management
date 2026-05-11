@@ -10,7 +10,16 @@ const DEFAULT_FROM_EMAIL = 'aadc70001@smtp-brevo.com';
 const DEFAULT_FROM_NAME = 'WolfTeam';
 
 async function sendViaBrevo(to: string, subject: string, html: string): Promise<BrevoResponse> {
+  const requestStartedAt = new Date().toISOString();
   try {
+    // Edge function hit olmuyor ise bunu anlamak için en baştan log
+    console.log('📨 brevo-email request start', {
+      to,
+      subject,
+      supabaseFunctionUrl: SUPABASE_FUNCTION_URL,
+      requestStartedAt,
+    });
+
     const res = await fetch(SUPABASE_FUNCTION_URL, {
       method: 'POST',
       headers: {
@@ -26,13 +35,42 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
       }),
     });
 
+    const responseText = await res.text().catch(() => '');
+    let data: any = null;
+    if (responseText) {
+      data = (() => {
+        try {
+          return JSON.parse(responseText);
+        } catch {
+          return null;
+        }
+      })();
+    }
+
+    console.log('📨 brevo-email response', {
+      status: res.status,
+      ok: res.ok,
+      requestStartedAt,
+      responseText:
+        responseText && responseText.length > 1000
+          ? responseText.slice(0, 1000) + '...'
+          : responseText,
+      responseJson: data,
+    });
+
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { success: false, error: data?.error || 'Email send failed' };
+      return { success: false, error: data?.error || data?.message || 'Email send failed' };
     }
 
     return { success: true };
   } catch (e: any) {
+    console.warn('📨 brevo-email request failed (fetch error)', {
+      to,
+      subject,
+      supabaseFunctionUrl: SUPABASE_FUNCTION_URL,
+      requestStartedAt,
+      error: String(e),
+    });
     return { success: false, error: String(e) };
   }
 }
