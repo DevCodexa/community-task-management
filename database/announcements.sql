@@ -11,6 +11,7 @@
 -- ------------------------------------------------------------
 -- 1) announcements table
 -- ------------------------------------------------------------
+
 create table if not exists announcements (
   id uuid default gen_random_uuid() primary key,
 

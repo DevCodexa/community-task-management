@@ -58,12 +58,6 @@ export const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
                 {EVENT_TYPE_LABELS[announcement.type]}
               </span>
             </div>
-
-           {/* <div className="text-sm font-bold text-silver-100 truncate">{announcement.title}</div>
-
-           } <h3 className="mt-3 text-xl font-bold text-silver-100 group-hover:text-white  max-w-full overflow-hidden truncate">
-              {announcement.title}
-            </h3>*/}
           </button>
             <h3 className="mt-3 text-xl font-bold text-silver-100 group-hover:text-white  max-w-full overflow-hidden truncate">
               {announcement.title}

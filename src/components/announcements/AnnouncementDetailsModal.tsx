@@ -15,8 +15,6 @@ export const AnnouncementDetailsModal: React.FC<AnnouncementDetailsModalProps> =
   announcement,
 }: AnnouncementDetailsModalProps) => {
   if (!isOpen) return null;
-
-
   return (
     <div className={`fixed inset-0 z-[65] ${isOpen ? 'flex' : 'hidden'} items-center justify-center p-4`}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={onClose} />

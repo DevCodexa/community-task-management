@@ -7,7 +7,6 @@ import type {
   AnnouncementFormData,
   AnnouncementQueryParams,
   AnnouncementUpdateData,
-  AnnouncementMember,
   FullAnnouncement,
   PaginatedAnnouncementsResponse,
   ValidationResult,
