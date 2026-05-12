@@ -8,6 +8,7 @@ import { LinksPage } from './pages/LinksPage'
 import { SpeakersPage } from './pages/SpeakersPage'
 import { BirthdaysPage } from './pages/BirthdaysPage'
 import { EventsPage } from './pages/EventsPage'
+import { AnnouncementsPage } from './pages/AnnouncementsPage'
 import { ThemeProvider } from './context/ThemeContext'
 import { UserProfileProvider } from './context/UserProfileContext'
 import { AuthRedirector } from './context/AuthRedirector'
@@ -37,6 +38,7 @@ function App() {
             <Route path="/linkler" element={<Layout><LinksPage /></Layout>} />
             <Route path="/konusmacilar" element={<Layout><SpeakersPage /></Layout>} />
             <Route path="/etkinlikler" element={<Layout><EventsPage /></Layout>} />
+            <Route path="/duyurular" element={<Layout><AnnouncementsPage /></Layout>} />
             <Route path="/ayarlar" element={<Layout><Dashboard /></Layout>} />
           </Routes>
         </BrowserRouter>

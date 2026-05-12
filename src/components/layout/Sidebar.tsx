@@ -34,7 +34,7 @@ const menuItems = [
   { label: 'Doğum Günleri', path: '/dogum-gunleri', icon: Cake },
   { label: 'Bölümler', path: '/organizasyon/bolumler', icon: Puzzle },
 
-  { label: 'Duyurular', path: '/ayarlar', icon: Megaphone },
+  { label: 'Duyurular', path: '/duyurular', icon: Megaphone },
   { label: 'Topluluk Ayarları', path: '/topluluk-ayarlar', icon: Settings },
 ];
 
