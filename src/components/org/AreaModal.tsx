@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Search, UserCheck, Building2, Trash2,  } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { useTheme } from '../../context/ThemeContext';
-import { sendEmail } from '../../lib/resend';
+import { sendEmail } from '../../lib/brevo';
 import { supabase } from '../../lib/supabase';
 import { OrgArea, getAreaMembersByAreaId, createArea, setAreaMembers, updateArea, deleteArea } from '../../lib/supabaseOrgHierarchy';
 import { searchMembers } from '../../lib/supabaseMembers';

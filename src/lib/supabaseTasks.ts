@@ -228,8 +228,11 @@ const sendTaskEmailNotification = async (
       return;
     }
 
-    // Import and send email
-    const { sendTaskAssignmentEmail } = await import('./resend');
+    // Brevo üzerinden email gönder
+    const { sendTaskAssignmentEmail } = await import('./brevo');
+
+    console.log('Brevo tetiklendi, alıcı:', member.email);
+
     
     await sendTaskAssignmentEmail(
       member.email,
@@ -257,7 +260,11 @@ export const updateTask = async (id: string, updateData: any): Promise<FullTask>
   const currentTask = await getTaskById(id);
   if (!currentTask) throw new Error('Görev bulunamadı');
 
+  // assignee_id değiştiyse (özellikle yeni kullanıcıya) mail tetikle
+  const assigneeChanged = normalizedData.assignee_id !== undefined && normalizedData.assignee_id !== currentTask.assignee_id;
+
   // Limit ve aktiflik mantığı kontrolü
+
   if (normalizedData.status && normalizedData.status !== currentTask.status) {
       const assigneeId = normalizedData.assignee_id || currentTask.assignee_id;
       if (assigneeId) {
@@ -273,8 +280,17 @@ export const updateTask = async (id: string, updateData: any): Promise<FullTask>
 
   const { data, error } = await supabase.from('tasks').update(normalizedData).eq('id', id).select().single();
   if (error) throwError(error);
+
+  // fire-and-forget: UX'i kilitlemeyelim
+  if (assigneeChanged && data?.assignee_id) {
+    sendTaskEmailNotification(data.assignee_id, data).catch(err => {
+      console.warn('Task assignment email failed:', err);
+    });
+  }
+
   return data;
 };
+
 
 export const deleteTask = async (id: string): Promise<void> => {
   const task = await getTaskById(id);

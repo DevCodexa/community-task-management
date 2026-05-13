@@ -1,15 +1,7 @@
-# TODO - Proje üye ataması (org_project_members)
+- [x] src/lib/supabaseAnnouncements.ts: getAnnouncements() içine memberCount (announcement_members join/count) ekle
+- [x] src/components/announcements/AnnouncementTable.tsx: “Üye Sayısı” kolonunu ekle (memberCount göster)
+- [x] src/components/announcements/AnnouncementTable.tsx: aksiyon alanına göz ikonu + “Detayı gör” ekle (onView)
+- [x] TypeScript build/lint çalıştır ve hataları düzelt
+- [ ] Uygulamada announcements tablosunda doğrula
 
-## Plan
-1. DB: `org_project_members` tablosu + indeks + unique constraint oluştur.
-2. DB: RLS policy’leri ekle (insert/select/delete gerekebilir).
-3. Backend: `src/lib/supabaseOrgHierarchy.ts`
-   - `setProjectMembers(payload)` fonksiyonunu ekle (project_id + memberIds).
-   - `createProject` ve `updateProject` sonrası proje üyeliklerini yaz.
-4. Frontend: `src/components/org/ProjectModal.tsx`
-   - `handleSubmit` içinde `selectedMemberIds` boş değilse `setProjectMembers` çağır.
-5. (Opsiyonel) Proje silince `org_project_members` cascade silinsin (FK ON DELETE CASCADE).
-6. Test: 
-   - Alanlar sayfasında member seç → Proje ekle → Proje sayfasında ekip sayısı artık 0 olmamalı.
-   - Proje düzenle: member değiştirince sync olmalı.
 

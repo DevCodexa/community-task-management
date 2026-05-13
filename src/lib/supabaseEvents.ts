@@ -370,7 +370,7 @@ const sendSpeakerInviteEmailNotification = async (
       event.location || ''
     );
 
-    const { sendEmail } = await import('./resend');
+    const { sendEmail } = await import('./brevo');
     
     await sendEmail(
       speaker.email,
@@ -584,8 +584,8 @@ const sendEventStaffEmailNotification = async (
       event.location || ''
     );
 
-    // Send email via Resend
-    const { sendEmail } = await import('./resend');
+    // Send email via Brevo
+    const { sendEmail } = await import('./brevo');
     
     await sendEmail(
       member.email,

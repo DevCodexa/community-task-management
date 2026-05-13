@@ -343,17 +343,17 @@ export const AreasPage: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Proje Sayısı */}
-                        <td className="px-4 py-4">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/10 text-silver-200">
-                            {projectCount}
-                          </span>
-                        </td>
-
                         {/* Ekip Sayısı */}
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/10 text-silver-200">
                             {memberCount}
+                          </span>
+                        </td>
+
+                        {/* Proje Sayısı */}
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.03] border border-white/10 text-silver-200">
+                            {projectCount}
                           </span>
                         </td>
 

@@ -8,6 +8,7 @@ import { LinksPage } from './pages/LinksPage'
 import { SpeakersPage } from './pages/SpeakersPage'
 import { BirthdaysPage } from './pages/BirthdaysPage'
 import { EventsPage } from './pages/EventsPage'
+import { AnnouncementsPage } from './pages/AnnouncementsPage'
 import { ThemeProvider } from './context/ThemeContext'
 import { UserProfileProvider } from './context/UserProfileContext'
 import { AuthRedirector } from './context/AuthRedirector'
@@ -15,8 +16,10 @@ import { DepartmentsPage } from './pages/DepartmentsPage'
 import { AreasPage } from './pages/AreasPage'
 
 import { ProjectsPage } from './pages/ProjectsPage'
+import ProfilePage from './pages/ProfilePage'
 
 function App() {
+
 
   return (
     <ThemeProvider>
@@ -37,8 +40,11 @@ function App() {
             <Route path="/linkler" element={<Layout><LinksPage /></Layout>} />
             <Route path="/konusmacilar" element={<Layout><SpeakersPage /></Layout>} />
             <Route path="/etkinlikler" element={<Layout><EventsPage /></Layout>} />
+            <Route path="/duyurular" element={<Layout><AnnouncementsPage /></Layout>} />
+            <Route path="/profile/:token" element={<ProfilePage />} />
             <Route path="/ayarlar" element={<Layout><Dashboard /></Layout>} />
           </Routes>
+
         </BrowserRouter>
       </UserProfileProvider>
     </ThemeProvider>
