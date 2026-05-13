@@ -105,15 +105,15 @@ serve(async (req: Request) => {
     // SMTP ENV
     // =========================
 
-    const host = env("VITE_BREVO_SMTP_HOST");
+    const host = env("BREVO_SMTP_HOST");
 
     const port = Number(
-      env("VITE_BREVO_SMTP_PORT") || 587
+      env("BREVO_SMTP_PORT") || 587
     );
 
-    const user = env("VITE_BREVO_SMTP_USER");
+    const user = env("BREVO_SMTP_USER");
 
-    const pass = env("VITE_BREVO_SMTP_PASS");
+    const pass = env("BREVO_SMTP_PASS");
 
     if (!host || !user || !pass) {
 
@@ -141,12 +141,12 @@ serve(async (req: Request) => {
 
     const resolvedFromEmail =
       fromEmail ||
-      env("VITE_BREVO_FROM_EMAIL") ||
+      env("BREVO_FROM_EMAIL") ||
       user;
 
     const resolvedFromName =
       fromName ||
-      env("VITE_BREVO_FROM_NAME") ||
+      env("BREVO_FROM_NAME") ||
       "Wolf Team Community";
 
     // =========================
