@@ -25,7 +25,7 @@ function env(name: string): string {
 }
 
 serve(async (req: Request) => {
-  // 1) Browser'ın "Ön Kontrol" (OPTIONS) isteğine anında yanıt ver
+// 1) CORS preflight: OPTIONS isteğine kesinlikle CORS header ile cevap ver
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
