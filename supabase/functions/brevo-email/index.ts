@@ -27,7 +27,7 @@ function env(name: string): string {
 serve(async (req: Request) => {
   // 1) Browser'ın "Ön Kontrol" (OPTIONS) isteğine anında yanıt ver
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
