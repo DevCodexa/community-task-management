@@ -16,8 +16,10 @@ import { DepartmentsPage } from './pages/DepartmentsPage'
 import { AreasPage } from './pages/AreasPage'
 
 import { ProjectsPage } from './pages/ProjectsPage'
+import ProfilePage from './pages/ProfilePage'
 
 function App() {
+
 
   return (
     <ThemeProvider>
@@ -39,8 +41,10 @@ function App() {
             <Route path="/konusmacilar" element={<Layout><SpeakersPage /></Layout>} />
             <Route path="/etkinlikler" element={<Layout><EventsPage /></Layout>} />
             <Route path="/duyurular" element={<Layout><AnnouncementsPage /></Layout>} />
+            <Route path="/profile/:token" element={<ProfilePage />} />
             <Route path="/ayarlar" element={<Layout><Dashboard /></Layout>} />
           </Routes>
+
         </BrowserRouter>
       </UserProfileProvider>
     </ThemeProvider>
