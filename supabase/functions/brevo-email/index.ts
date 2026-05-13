@@ -10,8 +10,7 @@ import nodemailer from "npm:nodemailer";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "*",
   "Content-Type": "application/json",
 };
 
@@ -31,10 +30,8 @@ type Payload = {
 // ENV Helper
 // =========================
 
-const D: any = globalThis.Deno;
-
 function env(name: string): string {
-  return D?.env?.get(name) ?? "";
+  return Deno.env.get(name) ?? "";
 }
 
 // =========================
@@ -43,9 +40,9 @@ function env(name: string): string {
 
 serve(async (req: Request) => {
 
-  // =========================================
-  // CORS PREFLIGHT
-  // =========================================
+  // =========================
+  // OPTIONS / PREFLIGHT
+  // =========================
 
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -56,9 +53,9 @@ serve(async (req: Request) => {
 
   try {
 
-    // =========================================
+    // =========================
     // METHOD CHECK
-    // =========================================
+    // =========================
 
     if (req.method !== "POST") {
       return new Response(
@@ -73,26 +70,11 @@ serve(async (req: Request) => {
       );
     }
 
-    // =========================================
-    // BODY PARSE
-    // =========================================
+    // =========================
+    // BODY
+    // =========================
 
-    let body: Payload;
-
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid JSON body",
-        }),
-        {
-          status: 400,
-          headers: corsHeaders,
-        }
-      );
-    }
+    const body: Payload = await req.json();
 
     const {
       to,
@@ -102,15 +84,15 @@ serve(async (req: Request) => {
       fromName,
     } = body;
 
-    // =========================================
+    // =========================
     // VALIDATION
-    // =========================================
+    // =========================
 
     if (!to || !subject || !html) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Missing required fields: to, subject, html",
+          error: "Missing required fields",
         }),
         {
           status: 400,
@@ -119,29 +101,28 @@ serve(async (req: Request) => {
       );
     }
 
-    // =========================================
-    // SMTP CONFIG
-    // =========================================
+    // =========================
+    // SMTP ENV
+    // =========================
 
-    const host =
-      env("VITE_BREVO_SMTP_HOST") ||
-      env("BREVO_SMTP_HOST");
+    const host = env("BREVO_SMTP_HOST");
 
     const port = Number(
-      env("VITE_BREVO_SMTP_PORT") ||
-      env("BREVO_SMTP_PORT") ||
-      587
+      env("BREVO_SMTP_PORT") || 587
     );
 
-    const user =
-      env("VITE_BREVO_SMTP_USER") ||
-      env("BREVO_SMTP_USER");
+    const user = env("BREVO_SMTP_USER");
 
-    const pass =
-      env("VITE_BREVO_SMTP_PASS") ||
-      env("BREVO_SMTP_PASS");
+    const pass = env("BREVO_SMTP_PASS");
 
     if (!host || !user || !pass) {
+
+      console.error("SMTP ENV ERROR", {
+        host,
+        user,
+        passExists: !!pass,
+      });
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -154,50 +135,46 @@ serve(async (req: Request) => {
       );
     }
 
-    // =========================================
-    // FROM INFO
-    // =========================================
+    // =========================
+    // FROM
+    // =========================
 
     const resolvedFromEmail =
       fromEmail ||
-      env("VITE_BREVO_FROM_MAIL") ||
       env("BREVO_FROM_EMAIL") ||
       user;
 
     const resolvedFromName =
       fromName ||
-      env("VITE_BREVO_FROM_NAME") ||
       env("BREVO_FROM_NAME") ||
       "Luminari Community";
 
-    // =========================================
-    // TRANSPORTER
-    // =========================================
+    // =========================
+    // NODEMAILER
+    // =========================
 
     const transporter = nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
+
       auth: {
         user,
         pass,
       },
 
-      // timeout güvenliği
+      tls: {
+        rejectUnauthorized: false,
+      },
+
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 10000,
     });
 
-    // =========================================
-    // SMTP VERIFY
-    // =========================================
-
-    await transporter.verify();
-
-    // =========================================
+    // =========================
     // SEND MAIL
-    // =========================================
+    // =========================
 
     const info = await transporter.sendMail({
       from: `"${resolvedFromName}" <${resolvedFromEmail}>`,
@@ -206,9 +183,9 @@ serve(async (req: Request) => {
       html,
     });
 
-    // =========================================
-    // SUCCESS RESPONSE
-    // =========================================
+    // =========================
+    // SUCCESS
+    // =========================
 
     return new Response(
       JSON.stringify({
@@ -223,12 +200,18 @@ serve(async (req: Request) => {
 
   } catch (e: any) {
 
-    console.error("BREVO EMAIL ERROR:", e);
+    console.error("BREVO EMAIL ERROR");
+
+    console.error({
+      message: e?.message,
+      stack: e?.stack,
+      name: e?.name,
+    });
 
     return new Response(
       JSON.stringify({
         success: false,
-        error: e?.message || String(e),
+        error: e?.message || "Unknown error",
       }),
       {
         status: 500,
