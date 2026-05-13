@@ -31,16 +31,19 @@ const menuItems = [
   { label: 'Linkler', path: '/linkler', icon: ExternalLink },
   { label: 'Konuşmacılar', path: '/konusmacilar', icon: Mic },
   { label: 'Etkinlikler', path: '/etkinlikler', icon: Calendar },
-  { label: 'Ekipler', path: '/ayarlar', icon: Puzzle },
   { label: 'Doğum Günleri', path: '/dogum-gunleri', icon: Cake },
-  { label: 'Duyurular', path: '/ayarlar', icon: Megaphone },
-  { label: 'Topluluk Ayarları', path: '/ayarlar', icon: Settings },
+  { label: 'Bölümler', path: '/organizasyon/bolumler', icon: Puzzle },
+
+  { label: 'Duyurular', path: '/duyurular', icon: Megaphone },
+  { label: 'Topluluk Ayarları', path: '/topluluk-ayarlar', icon: Settings },
 ];
+
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const location = useLocation();
   const navRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [menuHover, setMenuHover] = useState(false);
 
   // Track mouse position relative to sidebar for glow effect
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -58,16 +61,16 @@ const { isIceBlue } = useTheme();
     <motion.aside
       layout
       initial={false}
-      animate={{ width: collapsed ? 80 : 288 }}
+      animate={{ width: collapsed ? 64 : 220 }}
       transition={{ type: 'spring', stiffness: 250, damping: 25 }}
       className={`relative h-screen shrink-0 overflow-hidden border-r ${
         isIceBlue 
           ? 'bg-white border-iceBlue-200 shadow-ice-blue' 
           : 'bg-coal-800 border-white/[0.15]'
       }`}
-
-
       onMouseMove={handleMouseMove}
+      onMouseEnter={() => setMenuHover(true)}
+      onMouseLeave={() => setMenuHover(false)}
     >
       {/* ═══════════════════════════════════════
           GLOBAL GLOW: moving radial gradient
@@ -126,7 +129,7 @@ const { isIceBlue } = useTheme();
           whileHover={{ scale: 1.1, rotate: collapsed ? 180 : 0 }}
           whileTap={{ scale: 0.9 }}
           onClick={onToggle}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-white/80 hover:text-white/90 hover:border-white/[0.12] transition-colors"
+          className="flex h-5 w-5 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-white/80 hover:text-white/90 hover:border-white/[0.12] transition-colors"
 
         >
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
@@ -134,34 +137,39 @@ const { isIceBlue } = useTheme();
       </div>
 
       {/* ── Navigation ────────────────────────────────── */}
-      <nav ref={navRef} className="relative z-10 flex flex-1 flex-col px-3 space-y-1">
+      <nav ref={navRef} className="relative z-10 flex flex-1 flex-col px-2.5 space-y-1 overflow-visible">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 
           return (
-            <Link key={item.path} to={item.path} className="group relative block">
-              {/* Per-item hover glow */}
-              <div className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                style={{
-                  background: `radial-gradient(120px circle at center, rgba(116,192,252,0.10), transparent 70%)`,
-                }}
-              />
-
-<motion.div
-                layout
-                className={`relative flex items-center gap-3 rounded-xl px-3.5 py-3 transition-colors duration-300 ${
-                  isActive
-                    ? 'bg-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                    : 'hover:bg-white/[0.03]'
-                }`}
-                style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+            <Link
+                key={item.path}
+                to={item.path}
+                title={collapsed ? item.label : undefined}
+                className="group relative block overflow-visible"
               >
-                {/* Active indicator bar */}
+                {/* Per-item hover glow */}
+                <div className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  style={{
+                    background: `radial-gradient(120px circle at center, rgba(116,192,252,0.10), transparent 70%)`,
+                  }}
+                />
+
+                <motion.div
+                  layout
+                  className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors duration-300 overflow-visible ${
+                    isActive
+                      ? 'bg-white/[0.06] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
+                      : 'hover:bg-white/[0.03]'
+                  }`}
+                  style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                >
+                  {/* Active indicator bar */}
                 {isActive && (
                   <motion.div
                     layoutId="activeIndicator"
-                    className="absolute left-0 top-1/2 h-5 w-[2.5px] -translate-y-1/2 rounded-full bg-gradient-to-b from-ice-400 to-ice-600"
+                    className="absolute left-0 top-1/1 h-5 w-[2.5px] -translate-y-1/2 rounded-full bg-gradient-to-b from-ice-400 to-ice-600"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -169,9 +177,18 @@ const { isIceBlue } = useTheme();
                 {/* Icon with 3D spring animation */}
                 <motion.div
                   whileHover={{ scale: 1.15, rotate: 12, transition: { type: 'spring', stiffness: 400, damping: 15 } }}
-                  className="relative flex h-5 w-5 shrink-0 items-center justify-center"
+                  className="relative flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all duration-200"
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-ice-400 drop-shadow-[0_0_8px_rgba(116,192,252,0.4)]' : ''}`} />
+                  <Icon className={`h-4 w-4 transition-colors duration-200 ${
+                    isActive
+                      ? 'text-ice-300 drop-shadow-[0_0_12px_rgba(116,192,252,0.45)]'
+                      : menuHover
+                      ? 'text-ice-300 drop-shadow-[0_0_10px_rgba(116,192,252,0.25)]'
+                      : 'text-silver-400'
+                  }`} />
+                  {!isActive && (
+                    <span className={`pointer-events-none absolute inset-0 rounded-full transition-all duration-200 ${menuHover ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: '0 0 20px rgba(56,189,248,0.16)' }} />
+                  )}
                 </motion.div>
 
                 {/* Label with spring text reveal */}
@@ -182,7 +199,7 @@ const { isIceBlue } = useTheme();
                       animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, x: -12, filter: 'blur(4px)' }}
                       transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-                      className="flex-1 whitespace-nowrap text-sm font-medium"
+                      className="flex-1 whitespace-nowrap text-xs font-medium"
                     >
                       {item.label}
                     </motion.span>
@@ -218,7 +235,7 @@ const { isIceBlue } = useTheme();
           {/* Avatar */}
           <div className="relative shrink-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-gradient-to-br from-coal-700 to-coal-800 shadow-lg">
-              <User className="h-4 w-4 text-white/80" />
+              <User className="h-3 w-3 text-white/80" />
 
             </div>
             {/* Online status indicator */}

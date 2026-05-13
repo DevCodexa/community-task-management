@@ -1,6 +1,7 @@
 import React from 'react';
 import { Cake, Gift } from 'lucide-react';
 import { FullMember } from '../../types/member';
+import { getColorVariantById } from '../../lib/colorVariants';
 
 interface BirthdayCardProps {
   member: FullMember;
@@ -14,15 +15,29 @@ const MONTHS = [
 
 export const BirthdayCard: React.FC<BirthdayCardProps> = ({ member, isToday = false }) => {
   const monthName = MONTHS[member.birth_month - 1] || '';
+  const variant = getColorVariantById(member.id);
 
   return (
     <div 
       className={`relative group glass-card rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
-        isToday 
-          ? 'ring-2 ring-ice-400 shadow-[0_0_20px_rgba(116,192,252,0.3)]' 
-          : ''
+        isToday ? 'ring-2 shadow-xl' : ''
       }`}
+      style={
+        isToday
+          ? { borderColor: variant.border, boxShadow: `0 0 24px ${variant.glowRGBA2}` }
+          : undefined
+      }
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `linear-gradient(180deg, ${variant.glowRGBA} 0%, rgba(0,0,0,0) 100%)` }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `radial-gradient(420px circle at 20% 0%, ${variant.gradientFrom}, transparent 55%)` }}
+      />
       {/* Birthday Badge */}
       {isToday && (
         <div className="absolute -top-2 -right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-ice-400 to-ice-600 shadow-lg shadow-ice-500/50">
@@ -40,8 +55,13 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({ member, isToday = fa
               className="h-16 w-16 rounded-full object-cover border-2 border-white/10"
             />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-ice-500/20 to-purple-500/20 border-2 border-white/10">
-              <span className="text-xl font-bold text-ice-400">
+            <div
+              className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/10"
+              style={{
+                background: `linear-gradient(135deg, ${variant.hex}22, ${variant.gradientFrom})`,
+              }}
+            >
+              <span className="text-xl font-bold" style={{ color: variant.text }}>
                 {member.name.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -49,7 +69,10 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({ member, isToday = fa
           
           {/* Today indicator ring */}
           {isToday && (
-            <div className="absolute inset-0 rounded-full animate-ping bg-ice-400/30" />
+            <div
+              className="absolute inset-0 rounded-full animate-ping"
+              style={{ backgroundColor: `${variant.glowRGBA}` }}
+            />
           )}
         </div>
 
@@ -66,9 +89,16 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({ member, isToday = fa
           )}
           
           <div className="mt-2 flex items-center gap-2 text-sm">
-            <div className="flex items-center gap-1.5 rounded-lg bg-ice-500/10 px-2.5 py-1">
-              <Gift className="h-3.5 w-3.5 text-ice-400" />
-              <span className="text-ice-400 font-medium">
+            <div
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1"
+              style={{
+                backgroundColor: `${variant.gradientFrom}`,
+                color: variant.text,
+                boxShadow: `0 0 18px ${variant.glowRGBA2}`,
+              }}
+            >
+              <Gift className="h-3.5 w-3.5" />
+              <span className="font-medium">
                 {member.birth_day} {monthName}
               </span>
             </div>
@@ -78,8 +108,13 @@ export const BirthdayCard: React.FC<BirthdayCardProps> = ({ member, isToday = fa
 
       {/* Hover Effect - Birthday message */}
       {isToday && (
-        <div className="mt-4 rounded-lg bg-gradient-to-r from-ice-500/10 to-purple-500/10 p-3 text-center">
-          <p className="text-sm font-medium text-ice-300">
+        <div
+          className="mt-4 rounded-lg p-3 text-center"
+          style={{
+            background: `linear-gradient(135deg, ${variant.glowRGBA} 0%, ${variant.gradientFrom} 100%)`,
+          }}
+        >
+          <p className="text-sm font-medium" style={{ color: variant.text }}>
             🎉 Doğum günün kutlu olsun, {member.name}! 🎉
           </p>
         </div>

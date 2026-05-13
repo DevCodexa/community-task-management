@@ -115,7 +115,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+
       {/* Glassmorphism Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xl"
@@ -169,7 +170,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
         {/* Task Limit Warning */}
         {isTaskLimitReached && (
-          <div className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+          <div className="mx-6 mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+
             <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-red-400">
@@ -186,15 +188,18 @@ export const MemberModal: React.FC<MemberModalProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit}>
           {error && (
-            <div className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+          <div className="mx-6 mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {error}
             </div>
+
           )}
 
           <MemberFormFields formData={formData} onChange={handleChange} />
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-2">
+        {/* Footer Actions */}
+        <div className="flex items-center justify-center sm:justify-end gap-3 px-6 pb-6 pt-2">
+
+
             <button
               type="button"
               onClick={onClose}

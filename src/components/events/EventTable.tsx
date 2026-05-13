@@ -44,12 +44,30 @@ export const EventTable: React.FC<EventTableProps> = ({
   loading = false
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const filteredEvents = useMemo(() => {
     return events.filter(event =>
       event.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [events, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize));
+  const pagedEvents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredEvents.slice(start, start + pageSize);
+  }, [filteredEvents, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, events.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const [staffCounts, setStaffCounts] = useState<Record<string, number>>({});
   const [speakerCounts, setSpeakerCounts] = useState<Record<string, number>>({});
@@ -106,7 +124,7 @@ export const EventTable: React.FC<EventTableProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {filteredEvents.map((event) => (
+              {pagedEvents.map((event) => (
                 <tr key={event.id} className={`group hover:bg-white/5 transition-colors ${isEventUpcoming(event) ? '' : 'opacity-75'}`}>
                   <td className="px-6 py-4">
                     <div>
@@ -170,7 +188,7 @@ export const EventTable: React.FC<EventTableProps> = ({
               ))}
               {filteredEvents.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16 text-center">
+                  <td colSpan={7} className="px-6 py-16 text-center">
                     <AlertCircle className="h-12 w-12 text-silver-600 mx-auto mb-4 opacity-50" />
                     <h3 className="text-lg font-bold text-silver-400 mb-1">Etkinlik bulunamadı</h3>
                     <p className="text-sm text-silver-600">Arama kriterlerini değiştirin veya yeni etkinlik ekleyin.</p>
@@ -179,6 +197,33 @@ export const EventTable: React.FC<EventTableProps> = ({
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="border-t border-white/10 bg-white/5 px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-silver-400">
+            Toplam {filteredEvents.length} etkinlik içerisinde {pagedEvents.length} gösteriliyor.
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+            >
+              Önceki
+            </button>
+            <span className="text-sm text-silver-300">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="rounded-lg px-3 py-1.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 bg-white/5 text-silver-200 hover:bg-white/10"
+            >
+              Sonraki
+            </button>
+          </div>
         </div>
       </div>
     </div>

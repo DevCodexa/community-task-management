@@ -246,6 +246,15 @@ export interface MemberOption {
   name: string;
 }
 
+export interface RecentSpeaker {
+  id: string;
+  full_name: string;
+  title: string | null;
+  company: string | null;
+  image_url: string | null;
+  created_at: string;
+}
+
 export const getTotalSpeakers = async (): Promise<number> => {
   const { count, error } = await supabase
     .from('speakers')
@@ -253,6 +262,25 @@ export const getTotalSpeakers = async (): Promise<number> => {
   
   if (error) throwError(error);
   return count || 0;
+};
+
+export const getRecentSpeakers = async (limit: number = 5): Promise<RecentSpeaker[]> => {
+  const { data, error } = await supabase
+    .from('speakers')
+    .select('id, full_name, title, company, image_url, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throwError(error);
+
+  return (data || []).map(speaker => ({
+    id: speaker.id,
+    full_name: speaker.full_name,
+    title: speaker.title,
+    company: speaker.company,
+    image_url: speaker.image_url,
+    created_at: speaker.created_at,
+  }));
 };
 
 export const getMemberOptions = async (): Promise<MemberOption[]> => {

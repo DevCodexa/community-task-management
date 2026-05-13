@@ -11,6 +11,7 @@ interface LayoutProps {
 }
 
 const themeOptions = [
+  { value: 'light', label: 'Açık', icon: Sun },
   { value: 'dark', label: 'Karanlık', icon: Moon },
   { value: 'blueMor', label: 'Mor', icon: Sparkles },
   { value: 'iceBlue', label: 'Buz Mavisi', icon: Sun },

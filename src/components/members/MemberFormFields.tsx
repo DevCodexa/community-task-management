@@ -67,8 +67,9 @@ export const MemberFormFields: React.FC<MemberFormFieldsProps> = ({
     (formData.name
       ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
           formData.name
-        )}&background=0D8ABC&color=fff`
-      : '');
+        )}&background=0D8ABC&color=fff&bold=true&length=1`
+      : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="100%" height="100%" rx="28" fill="%230D8ABC"/></svg>');
+
 
   const inputBase =
     'w-full pl-9 pr-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 text-silver-100 text-sm placeholder:text-silver-700 focus:outline-none focus:border-ice-500/50 focus:ring-1 focus:ring-ice-500/20 transition-all';
@@ -76,18 +77,25 @@ export const MemberFormFields: React.FC<MemberFormFieldsProps> = ({
   const labelBase = 'block text-xs font-medium text-silver-400 mb-1.5';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 px-2">
       {/* Avatar Preview & URL Input */}
       <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-        <img
+
+          <img
           src={avatarPreview}
           alt="Avatar preview"
-          className="h-14 w-14 rounded-full object-cover ring-2 ring-white/10"
+          className="h-14 w-14 rounded-full object-cover ring-2 ring-white/10 bg-iceBlue-500/10"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="100%" height="100%" rx="28" fill="%230D8ABC"/></svg>';
+          }}
         />
-        <div className="flex-1 min-w-0">
+
+          <div className="flex-1 min-w-0">
           <label className={labelBase}>Profil Fotoğrafı URL</label>
           <div className="relative">
             <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-silver-600" />
+
             <input
               type="url"
               name="avatar"

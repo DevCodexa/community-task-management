@@ -44,7 +44,7 @@ export const TaskDonutChart: React.FC<TaskDonutChartProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={hasData ? data : [{ name: 'Veri Yok', value: 1, color: '#374151' }]}
+              data={hasData ? data : [{ name: 'Veri Yok', value: 1, color: '#1e2736' }]}
               cx="50%"
               cy="50%"
               innerRadius={85}

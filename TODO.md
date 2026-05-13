@@ -1,11 +1,7 @@
-# LinksPage Accordion Implementation
-Status: [In Progress]
+- [x] src/lib/supabaseAnnouncements.ts: getAnnouncements() içine memberCount (announcement_members join/count) ekle
+- [x] src/components/announcements/AnnouncementTable.tsx: “Üye Sayısı” kolonunu ekle (memberCount göster)
+- [x] src/components/announcements/AnnouncementTable.tsx: aksiyon alanına göz ikonu + “Detayı gör” ekle (onView)
+- [x] TypeScript build/lint çalıştır ve hataları düzelt
+- [ ] Uygulamada announcements tablosunda doğrula
 
-## Steps:
-- [ ] Step 1: Add imports (ChevronDown), state (expandedCategory), colors array, toggle function in LinksPage.tsx
-- [ ] Step 2: Update groupedLinks.map - replace static header with clickable colored header (motion.button), add motion.div for content with variants
-- [ ] Step 3: Test animations, colors, single-open logic
-- [ ] Step 4: Verify modals/edit/delete unchanged
-- [ ] Step 5: Complete task
 
-Current: Starting Step 1

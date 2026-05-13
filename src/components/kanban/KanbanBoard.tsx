@@ -216,7 +216,7 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
           return (
             <div
               key={column.id}
-              className="min-w-[320px] flex-shrink-0 bg-coal-800/50 border border-white/10 rounded-2xl p-6"
+              className="min-w-[250px] flex-shrink-0 bg-coal-800/50 border border-white/10 rounded-2xl p-6"
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, column.id)}
             >
@@ -227,7 +227,7 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
                 <div className={`h-3 w-3 rounded-full bg-${column.color}-400`} />
               </div>
 
-              <div className="space-y-4 min-h-[500px]">
+              <div className="space-y-4 min-h-[200px]">
                 <AnimatePresence mode="popLayout">
                   {colTasks.map((task) => (
                     <motion.div
@@ -248,8 +248,8 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
 <div className="space-y-1">
   <div className="flex items-start justify-between">
     <h4 className="font-semibold text-silver-100 leading-tight pr-2">
-      {task.title.length > 30 
-        ? `${task.title.substring(0, 30)}...` 
+      {task.title.length > 20 
+        ? `${task.title.substring(0, 20)}...` 
         : task.title}
     </h4>
     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -264,13 +264,13 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
       </button>
     </div>
   </div>
-  {task.title.length > 70 && (
+  {/*{task.title.length > 30 && (
     <div className="flex justify-end">
       <span className="text-[10px] text-ice-400 font-semibold bg-ice-400/5 px-1.5 py-0.5 rounded border border-ice-400/20">
         ...
       </span>
     </div>
-  )}
+  )}*/}
 </div>
 
                         {task.description && (
@@ -281,13 +281,13 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
                       : task.description}
                           </p>
     
-                         {task.description.length > 50 && (
+                         {/*{task.description.length > 20 && (
                                   <div className="flex justify-end">
                             <span className="text-[10px] text-ice-400 font-semibold bg-ice-400/5 px-1.5 py-0.5 rounded border border-ice-400/20">
                              ...
                                  </span>
                                      </div>
-                              )}
+                              )}*/}
                        </div>
                       )}
 

@@ -22,7 +22,7 @@ export const LoginScreen: React.FC = () => {
                 <Link2 className="h-6 w-6 text-ice-400" />
               </div>
               <h3 className="font-display text-lg font-semibold text-silver-200">
-                Zincir Yapısı
+                Yönetim Paneli
               </h3>
               <p className="mt-2 max-w-[180px] text-center text-xs leading-relaxed text-silver-600">
                 Görevlerin birbiriyle bağlantılı ve koşullu ilerlemesi
@@ -42,7 +42,7 @@ export const LoginScreen: React.FC = () => {
         {/* Alt metin */}
         <div className="absolute bottom-10 left-10">
           <p className="text-xs text-silver-700">
-            Topluluk Görev Yönetimi
+            Topluluk Yönetimi
           </p>
         </div>
       </div>

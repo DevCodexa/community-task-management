@@ -20,11 +20,14 @@ export const MembersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeGroup, setActiveGroup] = useState('Tüm Üyeler');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FullMember | null>(null);
 
-const [deleteConfirm, setDeleteConfirm] = useState<{
+  const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
     member: FullMember | null;
   }>({ open: false, member: null });
@@ -45,21 +48,59 @@ const [deleteConfirm, setDeleteConfirm] = useState<{
     }
   };
 
-
   useEffect(() => {
     fetchMembers();
   }, []);
 
+  const memberGroups = useMemo(() => {
+    const groups = new Set<string>();
+    members.forEach((member) => {
+      if (member.comm_title?.trim()) {
+        groups.add(member.comm_title.trim());
+      }
+    });
+    return ['Tüm Üyeler', ...Array.from(groups).sort((a, b) => a.localeCompare(b, 'tr'))];
+  }, [members]);
+
+  const activeMembers = useMemo(() => {
+    if (activeGroup === 'Tüm Üyeler') return members;
+    return members.filter((member) => member.comm_title === activeGroup);
+  }, [members, activeGroup]);
+
+  useEffect(() => {
+    if (activeGroup !== 'Tüm Üyeler' && !memberGroups.includes(activeGroup)) {
+      setActiveGroup('Tüm Üyeler');
+    }
+  }, [activeGroup, memberGroups]);
+
   const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return members;
+    const searchBase = activeMembers;
+    if (!searchQuery.trim()) return searchBase;
     const q = searchQuery.toLowerCase();
-    return members.filter((m) =>
+    return searchBase.filter((m) =>
       m.name.toLowerCase().includes(q) ||
       m.email.toLowerCase().includes(q) ||
       m.company.toLowerCase().includes(q) ||
       m.comm_title.toLowerCase().includes(q)
     );
-  }, [members, searchQuery]);
+  }, [activeMembers, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeGroup, searchQuery]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const pagedMembers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredMembers.slice(start, start + pageSize);
+  }, [filteredMembers, currentPage]);
 
   const handleEdit = (member: FullMember) => {
     setEditingMember(member);
@@ -130,6 +171,32 @@ const [deleteConfirm, setDeleteConfirm] = useState<{
         </button>
       </div>
 
+      {/* Group Tabs */}
+      <div className="mb-6 overflow-x-auto">
+        <div className="inline-flex gap-2 rounded-full border border-white/10 bg-white/5 p-1">
+          {memberGroups.map((group) => {
+            const count = group === 'Tüm Üyeler'
+              ? members.length
+              : members.filter((member) => member.comm_title === group).length;
+            const active = activeGroup === group;
+            return (
+              <button
+                key={group}
+                type="button"
+                onClick={() => setActiveGroup(group)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  active
+                    ? 'bg-ice-500/15 text-ice-200 shadow-sm shadow-ice-500/10'
+                    : 'text-silver-400 hover:bg-white/5 hover:text-silver-100'
+                }`}
+              >
+                {group} {group !== 'Tüm Üyeler' && `(${count})`}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Search */}
       <div className="mb-6 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-silver-600" />
@@ -167,12 +234,45 @@ const [deleteConfirm, setDeleteConfirm] = useState<{
             <p className="text-sm text-silver-500">Üyeler yükleniyor...</p>
           </div>
         ) : (
-          <MemberTable
-            members={filteredMembers}
-            onEdit={handleEdit}
-            onDelete={promptDelete}
-            onDetail={handleDetail}
-          />
+          <>
+            <MemberTable
+              members={pagedMembers}
+              onEdit={handleEdit}
+              onDelete={promptDelete}
+              onDetail={handleDetail}
+            />
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 rounded-b-2xl bg-slate-950/10 border-t border-white/10">
+              <p className="text-xs text-silver-500">
+                {filteredMembers.length === 0
+                  ? 'Gösterilecek üye yok.'
+                  : `${(currentPage - 1) * pageSize + 1}-${Math.min(
+                      currentPage * pageSize,
+                      filteredMembers.length
+                    )} / ${filteredMembers.length} üye gösteriliyor`}
+              </p>
+              {filteredMembers.length > 0 && (
+                <div className="inline-flex items-center gap-2 text-xs text-silver-400">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-full px-3 py-2 bg-white/5 text-silver-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Önceki
+                  </button>
+                  <span className="min-w-[4rem] text-center">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-full px-3 py-2 bg-white/5 text-silver-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Sonraki
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 

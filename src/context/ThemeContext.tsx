@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Theme = 'dark' | 'iceBlue';
+export type Theme = 'light' | 'dark' | 'iceBlue' | 'blueMor';
 
 interface ThemeContextType {
   theme: Theme;
@@ -9,13 +9,13 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   isIceBlue: false,
   setTheme: () => {},
 });
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
 
   const isIceBlue = theme === 'iceBlue';
 

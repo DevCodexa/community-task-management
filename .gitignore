@@ -1,0 +1,19 @@
+# Yerel ayarlar ve şifreler
+.env
+.env.local
+.env.*.local
+
+# Kütüphaneler (Bunlar zaten npm install ile yüklenir, git'e gerek yok)
+node_modules/
+
+# Build çıktıları
+dist/
+build/
+
+# IDE ayarları
+.vscode/
+.idea/
+
+# Sistem dosyaları
+.DS_Store
+thumbs.db

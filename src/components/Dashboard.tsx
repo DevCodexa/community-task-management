@@ -10,9 +10,11 @@ import {
 import { Mic } from 'lucide-react';
 
 import { getRecentMembers, RecentMember } from '../lib/supabaseMembers';
+import { getRecentSpeakers, RecentSpeaker } from '../lib/supabaseSpeakers';
 import { KPICard } from './dashboard/KPICard';
 import { TaskDonutChart } from './dashboard/TaskDonutChart';
 import { RecentMembersTable } from './dashboard/RecentMembersTable';
+import { RecentSpeakersTable } from './dashboard/RecentSpeakersTable';
 import { RecentTasksTable } from './dashboard/RecentTasksTable';
 
 interface DashboardStats {
@@ -29,22 +31,25 @@ export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [taskDistribution, setTaskDistribution] = useState<TaskDistributionItem[]>([]);
   const [recentMembers, setRecentMembers] = useState<RecentMember[]>([]);
+  const [recentSpeakers, setRecentSpeakers] = useState<RecentSpeaker[]>([]);
   const [recentTasks, setRecentTasks] = useState<CompletedTask[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [statsData, distributionData, membersData, tasksData] = await Promise.all([
+        const [statsData, distributionData, membersData, speakersData, tasksData] = await Promise.all([
           getDashboardStats(),
           getTaskDistribution(),
           getRecentMembers(5),
+          getRecentSpeakers(5),
           getLatestCompletedTasks(5)
         ]);
         
         setStats(statsData);
         setTaskDistribution(distributionData);
         setRecentMembers(membersData);
+        setRecentSpeakers(speakersData);
         setRecentTasks(tasksData);
       } catch (error) {
         console.error('Dashboard veri çekme hatası:', error);
@@ -149,10 +154,10 @@ export const Dashboard: React.FC = () => {
         <RecentTasksTable tasks={recentTasks} />
       </div>
 
-      {/* Recent Members */}
-      <div className="grid grid-cols-1 lg:grid-cols-2">
+      {/* Recent Members + Speakers */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <RecentMembersTable members={recentMembers} />
-        <div /> {/* Spacer for balance */}
+        <RecentSpeakersTable speakers={recentSpeakers} />
       </div>
     </div>
   );
