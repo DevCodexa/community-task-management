@@ -3,16 +3,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import nodemailer from "npm:nodemailer";
 
-// =========================
-// CORS
-// =========================
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "*",
-  "Content-Type": "application/json",
-};
 
 // =========================
 // Types
@@ -98,20 +90,18 @@ serve(async (req: Request) => {
     // =========================
 
     const brevoApiKey = env("BREVO_API_KEY");
-    console.log("Ürem : )", brevoApiKey)
 
-    console.info("🧪 brevo-email env check", {
-      hasBrevoApiKey: isNonEmpty(brevoApiKey),
-      hasBrevoSmtpHost: isNonEmpty(env("BREVO_SMTP_HOST")),
-      hasBrevoSmtpUser: isNonEmpty(env("BREVO_SMTP_USER")),
-      hasBrevoSmtpPass: isNonEmpty(env("BREVO_SMTP_PASS")),
+    console.info("brevo-email mode", {
+      useBrevoApi: isNonEmpty(brevoApiKey),
     });
+
 
     if (isNonEmpty(brevoApiKey)) {
       const endpoint = "https://api.brevo.com/v3/smtp/email";
 
       const resolvedFromEmail =
-        fromEmail || env("BREVO_SMTP_USER") || env("BREVO_FROM_EMAIL");
+        fromEmail || env("BREVO_FROM_EMAIL") || env("BREVO_SMTP_USER");
+
 
       const resolvedFromName =
         fromName || env("BREVO_FROM_NAME") || "Wolf Team Community";
