@@ -4,12 +4,14 @@ export type BrevoResponse = {
 };
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://vbokappwelyrvoxnkigp.supabase.co';
-const SUPABASE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/brevo-email`;
+const SUPABASE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/brevo-email`; // TODO: function silindiyse bu URL'yi yeni endpoint'e çek
 
 const DEFAULT_FROM_EMAIL = 'aadc70001@smtp-brevo.com';
 const DEFAULT_FROM_NAME = 'WolfTeam';
 
 async function sendViaBrevo(to: string, subject: string, html: string): Promise<BrevoResponse> {
+  // Debug: hangi backend'i çağırıyoruz?
+  console.log('🧪 sendViaBrevo() called - target URL:', SUPABASE_FUNCTION_URL);
   const requestStartedAt = new Date().toISOString();
   try {
     // Edge function hit olmuyor ise bunu anlamak için en baştan log
@@ -19,6 +21,8 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
       supabaseFunctionUrl: SUPABASE_FUNCTION_URL,
       requestStartedAt,
     });
+
+console.log('🔑 sendViaBrevo(): using default API payload (will call edge function)');
 
     const res = await fetch(SUPABASE_FUNCTION_URL, {
       method: 'POST',

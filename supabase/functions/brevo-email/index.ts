@@ -98,6 +98,14 @@ serve(async (req: Request) => {
     // =========================
 
     const brevoApiKey = env("BREVO_API_KEY");
+    console.log("Ürem : )", brevoApiKey)
+
+    console.info("🧪 brevo-email env check", {
+      hasBrevoApiKey: isNonEmpty(brevoApiKey),
+      hasBrevoSmtpHost: isNonEmpty(env("BREVO_SMTP_HOST")),
+      hasBrevoSmtpUser: isNonEmpty(env("BREVO_SMTP_USER")),
+      hasBrevoSmtpPass: isNonEmpty(env("BREVO_SMTP_PASS")),
+    });
 
     if (isNonEmpty(brevoApiKey)) {
       const endpoint = "https://api.brevo.com/v3/smtp/email";
