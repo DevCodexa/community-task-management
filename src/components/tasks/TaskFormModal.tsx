@@ -156,7 +156,7 @@ const fetchMembers = async () => {
         className="absolute inset-0 bg-black/70 backdrop-blur-xl" 
         onClick={onClose}
       />
-      <div className="relative w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-gradient-to-b from-coal-800/95 via-coal-900/90 to-coal-800/95 shadow-3xl backdrop-blur-3xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-gradient-to-b from-coal-800/95 via-coal-900/90 to-coal-800/95 shadow-3xl backdrop-blur-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="sticky top-0 bg-coal-900/50 border-b border-white/5 p-6 backdrop-blur-xl z-10">
           <div className="flex items-center justify-between">
@@ -183,7 +183,7 @@ const fetchMembers = async () => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
             <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
