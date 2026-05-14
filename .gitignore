@@ -1,5 +1,6 @@
 # Yerel ayarlar ve şifreler
 .env
+.env.*
 .env.local
 .env.*.local
 
