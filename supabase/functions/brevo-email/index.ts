@@ -272,6 +272,9 @@ serve(async (req: Request) => {
       html,
     });
 
+    console.info("Ürem BREVO SMTP result", info);
+
+
     // =========================
     // SUCCESS
     // =========================
