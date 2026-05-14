@@ -396,8 +396,8 @@ export const createMember = async (memberData: MemberFormData): Promise<FullMemb
 
   // ------------------------------
   // Onboarding mail trigger (YENİ KAYIT)
+  // İdempotent yapmak için email_logs unique index (email_type,to) kontrolü.
   // Fire-and-forget yapıyoruz ki UX etkilenmesin.
-  // Bu kod updateMember içinde değil; createMember içinde.
   // ------------------------------
   try {
     const { sendNewMemberWelcomeEmail } = await import('./brevo');
@@ -405,20 +405,55 @@ export const createMember = async (memberData: MemberFormData): Promise<FullMemb
     // İstenen: link şimdilik /profil
     const profilePath = '/profil';
 
+    const emailType = 'member_welcome';
+    const emailTo = data.email;
+
+    // 1) Önce log yazmayı dene (unique olduğu için tekrar denemede conflict alacağız)
+    const { error: logInsertError } = await supabase
+      .from('email_logs')
+      .insert([
+        {
+          email_type: emailType,
+          email_to: emailTo,
+          member_id: data.id,
+          status: 'sent',
+          provider_response: {},
+        },
+      ]);
+
+    // 2) Conflict ise mail göndermeyelim (zaten daha önce gönderilmiş demektir)
+    if (logInsertError) {
+      const code = (logInsertError as any)?.code;
+      const status = (logInsertError as any)?.status;
+      const msg = (logInsertError as any)?.message;
+
+      const isConflict = code === '23505' || status === 409 || String(msg || '').toLowerCase().includes('conflict');
+      if (isConflict) {
+        console.log('Onboarding mail idempotent: zaten gönderilmiş, skip:', {
+          emailType,
+          emailTo,
+        });
+        return data;
+      }
+
+      // Diğer DB hatalarında da maili göndermeyi durdurmak istemeyebiliriz,
+      // fakat güvenli tarafta kalalım: log yazılamadıysa mail de göndermeyelim.
+      console.warn('email_logs insert hatası, onboarding mail gönderimi iptal edildi:', {
+        error: logInsertError,
+      });
+      return data;
+    }
+
     console.log('Brevo tetiklendi, alıcı:', data.email);
 
-    sendNewMemberWelcomeEmail(
-      data.email,
-      data.name,
-      data.comm_title,
-      profilePath
-    ).catch((err: any) => {
-      console.warn('Yeni üye onboarding mail gönderimi başarısız:', err);
-    });
+    sendNewMemberWelcomeEmail(data.email, data.name, data.comm_title, profilePath).catch(
+      (err: any) => {
+        console.warn('Yeni üye onboarding mail gönderimi başarısız:', err);
+      }
+    );
   } catch (err) {
     console.warn('Yeni üye onboarding mail import başarısız:', err);
   }
-
 
   return data;
 };

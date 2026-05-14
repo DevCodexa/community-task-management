@@ -1,16 +1,14 @@
 # TODO
 
-## Brevo API Key ile Edge Function güncelleme
-- [x] Repo içindeki mevcut email Edge Function’ı tespit et: `supabase/functions/brevo-email/index.ts`
-- [x] `BREVO_API_KEY` var ise Brevo HTTP API (POST https://api.brevo.com/v3/smtp/email) ile mail gönderimi ekle
+## Completed
+- (placeholder)
 
-- [x] `BREVO_API_KEY` yok ise mevcut nodemailer SMTP fallback’i koru
-- [x] API öncelikli akış uygula (key varsa SMTP kullanılmasın)
-- [x] Hata durumlarında detaylı loglama ekle (fetch status/body, env eksikleri)
-- [x] Response formatını her durumda `{ success, messageId?, error? }` olarak koru
-- [x] CORS header’larını koru
-
-- [ ] TypeScript/deno build/lint için komut çalıştır (varsa)
-- [x] BREVO_API_KEY’in local geliştirme için `.env`/secret yönetimi notları eklendi
+## Next steps
+1. Repo içinde `members` insert/upsert ile ilgili 409 Conflict akışını doğrula.
+2. Mail gönderimini idempotent yapmak için `email_logs` mekanizmasını ekle (DB + kod).
+3. Supabase DB tarafında `email_logs` tablosu ve unique index (type,to) oluşturuldu.
+4. `createMember()` içinde onboarding maili, `email_logs` içine ilk kez insert olunca gönder.
+5. RLS/policy ayarlarını doğrula.
+6. Test: Aynı üyeyi iki kez create et / aynı request’i yeniden gönder → mail sadece 1 kez gitmeli.
 
 
