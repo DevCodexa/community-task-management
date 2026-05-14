@@ -409,7 +409,11 @@ export const createMember = async (memberData: MemberFormData): Promise<FullMemb
     const emailTo = data.email;
 
     // 1) Önce log yazmayı dene (unique olduğu için tekrar denemede conflict alacağız)
-    const { error: logInsertError } = await supabase
+    const {
+      data: logInsertData,
+      error: logInsertError,
+      status: logHttpStatus,
+    } = await supabase
       .from('email_logs')
       .insert([
         {
@@ -420,6 +424,14 @@ export const createMember = async (memberData: MemberFormData): Promise<FullMemb
           provider_response: {},
         },
       ]);
+
+    console.log('email_logs insert result', {
+      emailType,
+      emailTo,
+      logInsertData,
+      logHttpStatus,
+      logInsertError,
+    });
 
     // 2) Conflict ise mail göndermeyelim (zaten daha önce gönderilmiş demektir)
     if (logInsertError) {
