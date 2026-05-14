@@ -26,6 +26,12 @@ type Payload = {
   fromName?: string;
 };
 
+type ApiResult = {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+};
+
 // =========================
 // ENV Helper
 // =========================
@@ -34,12 +40,15 @@ function env(name: string): string {
   return Deno.env.get(name) ?? "";
 }
 
+function isNonEmpty(v: string | undefined | null): v is string {
+  return !!v && v.trim().length > 0;
+}
+
 // =========================
 // Main Server
 // =========================
 
 serve(async (req: Request) => {
-
   // =========================
   // OPTIONS / PREFLIGHT
   // =========================
@@ -52,22 +61,16 @@ serve(async (req: Request) => {
   }
 
   try {
-
     // =========================
     // METHOD CHECK
     // =========================
 
     if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Method not allowed",
-        }),
-        {
-          status: 405,
-          headers: corsHeaders,
-        }
-      );
+      const res: ApiResult = { success: false, error: "Method not allowed" };
+      return new Response(JSON.stringify(res), {
+        status: 405,
+        headers: corsHeaders,
+      });
     }
 
     // =========================
@@ -76,63 +79,148 @@ serve(async (req: Request) => {
 
     const body: Payload = await req.json();
 
-    const {
-      to,
-      subject,
-      html,
-      fromEmail,
-      fromName,
-    } = body;
+    const { to, subject, html, fromEmail, fromName } = body;
 
     // =========================
     // VALIDATION
     // =========================
 
     if (!to || !subject || !html) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Missing required fields",
-        }),
-        {
-          status: 400,
-          headers: corsHeaders,
-        }
-      );
+      const res: ApiResult = { success: false, error: "Missing required fields" };
+      return new Response(JSON.stringify(res), {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
     // =========================
-    // SMTP ENV
+    // API KEY PRIORITY
+    // =========================
+
+    const brevoApiKey = env("BREVO_API_KEY");
+
+    if (isNonEmpty(brevoApiKey)) {
+      const endpoint = "https://api.brevo.com/v3/smtp/email";
+
+      const resolvedFromEmail =
+        fromEmail || env("BREVO_SMTP_USER") || env("BREVO_FROM_EMAIL");
+
+      const resolvedFromName =
+        fromName || env("BREVO_FROM_NAME") || "Wolf Team Community";
+
+      // Brevo v3 transactional request body
+      const brevoBody = {
+        to: [{ email: to }],
+        subject,
+        html,
+        sender: {
+          email: resolvedFromEmail,
+          name: resolvedFromName,
+        },
+      };
+
+      // basic validation for sender when using API
+      if (!isNonEmpty(resolvedFromEmail)) {
+        const res: ApiResult = {
+          success: false,
+          error: "BREVO_API_KEY mode requires a sender email (set fromEmail or BREVO_SMTP_USER/BREVO_FROM_EMAIL)",
+        };
+        return new Response(JSON.stringify(res), {
+          status: 500,
+          headers: corsHeaders,
+        });
+      }
+
+      console.info("BREVO EMAIL: using HTTP API", {
+        endpoint,
+        hasApiKey: true,
+        to,
+        subject,
+      });
+
+      const controller = new AbortController();
+      const timeoutMs = 20000;
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const apiResp = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": brevoApiKey,
+          },
+          body: JSON.stringify(brevoBody),
+          signal: controller.signal,
+        });
+
+        const respText = await apiResp.text();
+        let respJson: any = null;
+        try {
+          respJson = respText ? JSON.parse(respText) : null;
+        } catch {
+          // ignore parse errors; keep respText
+        }
+
+        if (!apiResp.ok) {
+          console.error("BREVO HTTP API ERROR", {
+            status: apiResp.status,
+            statusText: apiResp.statusText,
+            responseText: respText,
+            responseJson: respJson,
+          });
+
+          const res: ApiResult = {
+            success: false,
+            error: `Brevo API error (${apiResp.status})`,
+          };
+
+          return new Response(JSON.stringify(res), {
+            status: 500,
+            headers: corsHeaders,
+          });
+        }
+
+        // Brevo returns message details; messageId may be present in some responses
+        const messageId =
+          respJson?.messageId ||
+          respJson?.message_id ||
+          respJson?.id ||
+          respJson?.message?.id;
+
+        const res: ApiResult = { success: true, messageId };
+        return new Response(JSON.stringify(res), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    // =========================
+    // SMTP ENV (fallback)
     // =========================
 
     const host = env("BREVO_SMTP_HOST");
-
-    const port = Number(
-      env("BREVO_SMTP_PORT") || 587
-    );
-
+    const port = Number(env("BREVO_SMTP_PORT") || 587);
     const user = env("BREVO_SMTP_USER");
-
     const pass = env("BREVO_SMTP_PASS");
 
     if (!host || !user || !pass) {
-
       console.error("SMTP ENV ERROR", {
         host,
-        user,
+        userPresent: isNonEmpty(user),
         passExists: !!pass,
       });
 
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "SMTP configuration missing",
-        }),
-        {
-          status: 500,
-          headers: corsHeaders,
-        }
-      );
+      const res: ApiResult = {
+        success: false,
+        error: "SMTP configuration missing",
+      };
+      return new Response(JSON.stringify(res), {
+        status: 500,
+        headers: corsHeaders,
+      });
     }
 
     // =========================
@@ -140,14 +228,10 @@ serve(async (req: Request) => {
     // =========================
 
     const resolvedFromEmail =
-      fromEmail ||
-      env("BREVO_FROM_EMAIL") ||
-      user;
+      fromEmail || env("BREVO_FROM_EMAIL") || user;
 
     const resolvedFromName =
-      fromName ||
-      env("BREVO_FROM_NAME") ||
-      "Wolf Team Community";
+      fromName || env("BREVO_FROM_NAME") || "Wolf Team Community";
 
     // =========================
     // NODEMAILER
@@ -176,6 +260,13 @@ serve(async (req: Request) => {
     // SEND MAIL
     // =========================
 
+    console.info("BREVO EMAIL: using SMTP fallback", {
+      host,
+      port,
+      to,
+      subject,
+    });
+
     const info = await transporter.sendMail({
       from: `"${resolvedFromName}" <${resolvedFromEmail}>`,
       to,
@@ -187,36 +278,31 @@ serve(async (req: Request) => {
     // SUCCESS
     // =========================
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        messageId: info.messageId,
-      }),
-      {
-        status: 200,
-        headers: corsHeaders,
-      }
-    );
+    const res: ApiResult = {
+      success: true,
+      messageId: info?.messageId,
+    };
 
+    return new Response(JSON.stringify(res), {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (e: any) {
-
     console.error("BREVO EMAIL ERROR");
-
     console.error({
       message: e?.message,
       stack: e?.stack,
       name: e?.name,
     });
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: e?.message || "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: corsHeaders,
-      }
-    );
+    const res: ApiResult = {
+      success: false,
+      error: e?.message || "Unknown error",
+    };
+
+    return new Response(JSON.stringify(res), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
