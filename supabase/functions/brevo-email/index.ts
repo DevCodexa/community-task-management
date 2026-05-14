@@ -264,6 +264,10 @@ serve(async (req: Request) => {
       to,
       subject,
     });
+    console.log("Ürem : )", {
+        fromEmail: resolvedFromEmail,
+        fromName: resolvedFromName,
+      });
 
     const info = await transporter.sendMail({
       from: `"${resolvedFromName}" <${resolvedFromEmail}>`,
