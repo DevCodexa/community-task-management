@@ -197,66 +197,6 @@ export const DepartmentModal: React.FC<DepartmentModalProps> = ({
           leaderId: selectedMemberId,
         });
 
-        const to = selectedMember.email;
-        if (to) {
-          const subject = 'Luminary Topluluğu’nda yeni bir bölüm sorumlusu olarak atandınız';
-          const html = `
-<!DOCTYPE html>
-<html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bölüm Atama Bildirimi</title>
-  </head>
-  <body style="margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f7f8fb;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f8fb; padding:40px 20px;">
-      <tr>
-        <td align="center">
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.06);">
-            <tr>
-              <td style="padding:26px 30px; background:linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%);">
-                <h1 style="margin:0; font-size:20px; color:#ffffff;">Bölüm Atama Bildirimi</h1>
-                <p style="margin:8px 0 0 0; font-size:13px; color:rgba(255,255,255,0.85);">Luminary Topluluğu</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:28px 30px;">
-                <p style="margin:0 0 14px 0; color:#1f2937; font-size:15px; line-height:1.6;">
-                  Merhaba <strong>${selectedMember.name}</strong>,
-                </p>
-
-                <p style="margin:0 0 18px 0; color:#334155; font-size:14px; line-height:1.7;">
-                  <strong>${created.name}</strong> adlı bölümün sorumlusu olarak atandınız.
-                  Luminary Topluluğu’ndaki süreçleri yönetmek için görev yönetimi panelini kullanabilirsiniz.
-                </p>
-
-                <div style="margin:22px 0;">
-                  <a href="https://community-tasks.vercel.app" style="display:inline-block; text-decoration:none; background:#0D8ABC; color:#ffffff; padding:12px 18px; border-radius:10px; font-weight:700; font-size:14px;">
-                    Bölümü Görüntüle
-                  </a>
-                </div>
-
-                <p style="margin:18px 0 0 0; color:#64748b; font-size:12px; line-height:1.6;">
-                  Bu e-posta otomatik olarak gönderilmiştir. Lütfen bu e-posta adresine yanıt vermeyin.
-                </p>
-              </td>
-            </tr>
-
-            <tr>
-              <td style="padding:16px 30px; border-top:1px solid #eef2f7; color:#94a3b8; font-size:12px; text-align:center;">
-                © ${new Date().getFullYear()} Luminary Topluluk
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
-          `.trim();
-
-          await sendEmail(to, subject, html);
-        }
       }
 
       onSuccess();
