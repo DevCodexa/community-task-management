@@ -8,8 +8,6 @@ import {
   Settings,
   ChevronRight,
   ChevronLeft,
-  User,
-  LogOut,
   ExternalLink,
   Mic,
   Cake,
@@ -18,13 +16,17 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useCommunityRealtimeSettings } from '../../hooks/useCommunityRealtimeSettings';
 
 interface SidebarProps {
+
   collapsed: boolean;
   onToggle: () => void;
 }
 
-const menuItems = [
+const menuItemsStatic = [
+
+
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Üye Yönetimi', path: '/uyeler', icon: Users },
   { label: 'Görev Zinciri', path: '/gorev-zinciri', icon: Link2 },
@@ -56,6 +58,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   }, []);
 
 const { isIceBlue } = useTheme();
+  const { settings } = useCommunityRealtimeSettings();
+
 
   return (
     <motion.aside
@@ -92,7 +96,10 @@ const { isIceBlue } = useTheme();
           {/* Logo mark */}
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-ice-500/10 to-transparent" />
-            <span className="relative z-10 text-sm font-bold text-white">T</span>
+            {/*<span className="relative z-10 text-sm font-bold text-white">T</span>*/}
+            {settings.logo_url && (
+              <img src={settings.logo_url} alt="Logo" className="h-full w-full object-contain" />
+            )}
 
           </div>
 
@@ -106,18 +113,19 @@ const { isIceBlue } = useTheme();
                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                 className="whitespace-nowrap"
               >
-<h2 className="font-display text-sm font-bold tracking-tight leading-tight"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-
-                  Topluluk
-                </h2>
-                <p className="text-[10px] leading-tight"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-
-                  Görev Yönetimi
+{settings.app_name ? (
+                  <h2 className="font-display text-sm font-bold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
+                    {settings.app_name}
+                  </h2>
+                ) : (
+                  <h2 className="font-display text-sm font-bold tracking-tight leading-tight" style={{ color: 'var(--text-primary)' }}>
+                    Topluluk
+                  </h2>
+                )}
+                <p className="text-[10px] leading-tight" style={{ color: 'var(--text-muted)' }}>
+                  {settings.app_subtitle || 'Görev Yönetimi'}
                 </p>
+
               </motion.div>
             )}
           </AnimatePresence>
@@ -138,7 +146,9 @@ const { isIceBlue } = useTheme();
 
       {/* ── Navigation ────────────────────────────────── */}
       <nav ref={navRef} className="relative z-10 flex flex-1 flex-col px-2.5 space-y-1 overflow-visible">
-        {menuItems.map((item) => {
+        {menuItemsStatic.map((item: any) => {
+
+
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 
@@ -227,23 +237,19 @@ const { isIceBlue } = useTheme();
 
       {/* ── User Profile Card ─────────────────────────── */}
       <div className="relative z-10 mt-auto border-t border-white/[0.05] px-3 pt-4 pb-5">
-        <div
-          className={`group relative flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-white/[0.03] ${
-            collapsed ? 'justify-center' : ''
-          }`}
-        >
-          {/* Avatar */}
+        
+          {/* Avatar 
           <div className="relative shrink-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-gradient-to-br from-coal-700 to-coal-800 shadow-lg">
               <User className="h-3 w-3 text-white/80" />
 
             </div>
-            {/* Online status indicator */}
+            {/* Online status indicator
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-coal-800 bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
 
-          </div>
+          </div> */}
 
-          {/* User info */}
+          {/* User info 
           <AnimatePresence>
             {!collapsed && (
 <motion.div
@@ -266,9 +272,9 @@ const { isIceBlue } = useTheme();
                 </div>
               </motion.div>
             )}
-          </AnimatePresence>
+          </AnimatePresence>*/}
 
-          {/* Logout icon */}
+          {/* Logout icon 
           {!collapsed && (
             <motion.button
               whileHover={{ scale: 1.2, rotate: 8 }}
@@ -278,7 +284,13 @@ const { isIceBlue } = useTheme();
             >
               <LogOut className="h-4 w-4" />
             </motion.button>
-          )}
+          )} */}
+
+          <div
+          className={`group relative flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-white/[0.03] ${
+            collapsed ? 'justify-center' : ''
+          }`}
+        >
         </div>
       </div>
     </motion.aside>

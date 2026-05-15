@@ -17,11 +17,13 @@ import { AreasPage } from './pages/AreasPage'
 
 import { ProjectsPage } from './pages/ProjectsPage'
 import ProfilePage from './pages/ProfilePage'
+import { CommunitySettingsPage } from './pages/CommunitySettingsPage'
 
 function App() {
 
 
   return (
+
     <ThemeProvider>
       <UserProfileProvider>
         <BrowserRouter>
@@ -42,7 +44,9 @@ function App() {
             <Route path="/etkinlikler" element={<Layout><EventsPage /></Layout>} />
             <Route path="/duyurular" element={<Layout><AnnouncementsPage /></Layout>} />
             <Route path="/profile/:token" element={<ProfilePage />} />
+            <Route path="/topluluk-ayarlar" element={<Layout><CommunitySettingsPage /></Layout>} />
             <Route path="/ayarlar" element={<Layout><Dashboard /></Layout>} />
+
           </Routes>
 
         </BrowserRouter>

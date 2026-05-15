@@ -8,8 +8,10 @@ import {
   CompletedTask 
 } from '../lib/supabaseTasks';
 import { Mic } from 'lucide-react';
+import { useCommunityRealtimeSettings } from '../hooks/useCommunityRealtimeSettings';
 
 import { getRecentMembers, RecentMember } from '../lib/supabaseMembers';
+
 import { getRecentSpeakers, RecentSpeaker } from '../lib/supabaseSpeakers';
 import { KPICard } from './dashboard/KPICard';
 import { TaskDonutChart } from './dashboard/TaskDonutChart';
@@ -61,7 +63,10 @@ export const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
+  const { settings } = useCommunityRealtimeSettings();
+
   const formatNumber = (num: number) => num.toLocaleString('tr-TR');
+
 
   if (loading) {
     return (
@@ -100,11 +105,12 @@ export const Dashboard: React.FC = () => {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking--tight text-silver-100 sm:text-3xl">
-            Dashboard
+            {settings.dashboard_title}
           </h1>
           <p className="mt-1 text-sm text-silver-600">
-            Topluluk görev yönetimine genel bakış
+            {settings.dashboard_subtitle}
           </p>
+
         </div>
       </div>
 
