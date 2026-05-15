@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Search, UserCheck, Building2, Trash2,  } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { useTheme } from '../../context/ThemeContext';
-import { sendEmail } from '../../lib/brevo';
+
 import { supabase } from '../../lib/supabase';
 import { OrgArea, getAreaMembersByAreaId, createArea, setAreaMembers, updateArea, deleteArea } from '../../lib/supabaseOrgHierarchy';
 import { searchMembers } from '../../lib/supabaseMembers';
@@ -182,136 +182,6 @@ export const AreaModal: React.FC<AreaModalProps> = ({
     setSelectedTeamIds((prev) => prev.filter((id) => id !== memberId));
   };
 
-  const sendAreaEmails = async (leaderId: string, teamIds: string[]) => {
-    // Collect emails (leader + team)
-    const ids = [leaderId, ...teamIds].filter(Boolean);
-
-    // ensure we have member emails; best-effort via candidates + fallback query
-    const uniqueIds = Array.from(new Set(ids));
-    const memberData: Array<{ id: string; email: string; name: string }> = [];
-
-    // use supabase directly to ensure emails even if candidates are empty
-    const { data: users, error } = await supabase
-      .from('members')
-      .select('id,name,email')
-      .in('id', uniqueIds);
-
-    if (error) throw new Error(error.message);
-
-    (users || []).forEach((u: any) => {
-      if (u?.email) memberData.push({ id: u.id, email: u.email, name: u.name });
-    });
-
-    const leader = memberData.find((m) => m.id === leaderId) || memberData[0];
-
-    if (leader?.email) {
-      const to = leader.email;
-      const subject = `🎯 Yeni Alan Eklemesi: ${name}`;
-      const html = `
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yeni Alan Bildirimi</title>
-</head>
-<body style="margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#0f0f1a;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f1a; padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; background:#1a1a2e; border-radius:16px; overflow:hidden;">
-          <tr>
-            <td style="padding:26px 30px; text-align:center; background:linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%);">
-              <h1 style="margin:0; font-size:20px; color:#fff;">🏷️ Yeni Alan</h1>
-              <p style="margin:8px 0 0 0; font-size:13px; color:rgba(255,255,255,0.85);">Zincir Atarlı Topluluk</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:28px 30px;">
-              <p style="margin:0 0 14px 0; color:#e0e0e0; font-size:15px; line-height:1.6;">
-                Merhaba <strong style="color:#0D8ABC;">${leader.name}</strong>,
-              </p>
-              <p style="margin:0 0 18px 0; color:#a0a0a0; font-size:14px; line-height:1.7;">
-                <strong>${name}</strong> adlı yeni alanın lideri/ekibi olarak dahil edildiniz.
-              </p>
-              <p style="margin:0; color:#a0a0a0; font-size:14px; line-height:1.7;">
-                Alanları yönetmek için panel üzerinden devam edebilirsiniz.
-              </p>
-              <div style="margin:22px 0;">
-                <a href="https://community-tasks.vercel.app" style="display:inline-block; text-decoration:none; background:#0D8ABC; color:#ffffff; padding:12px 18px; border-radius:10px; font-weight:700; font-size:14px;">
-                  Alanları Görüntüle →
-                </a>
-              </div>
-              <p style="margin:18px 0 0 0; color:#64748b; font-size:12px; line-height:1.6;">
-                Bu e-posta otomatik olarak gönderilmiştir. Lütfen bu e-posta adresine yanıt vermeyin.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-      `.trim();
-
-      await sendEmail(to, subject, html);
-    }
-
-    // send to all team members too (including leader if you want; we'll avoid double sending)
-    for (const member of memberData) {
-      if (!member.email) continue;
-      if (member.id === leaderId) continue;
-
-      const subjectMember = `🎯 Yeni Alana Dahil Edildiniz: ${name}`;
-      const htmlMember = `
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yeni Alan Bildirimi</title>
-</head>
-<body style="margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#0f0f1a;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f1a; padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; background:#1a1a2e; border-radius:16px; overflow:hidden;">
-          <tr>
-            <td style="padding:26px 30px; text-align:center; background:linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%);">
-              <h1 style="margin:0; font-size:20px; color:#fff;">📌 Yeni Alan</h1>
-              <p style="margin:8px 0 0 0; font-size:13px; color:rgba(255,255,255,0.85);">Zincir Atarlı Topluluk</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:28px 30px;">
-              <p style="margin:0 0 14px 0; color:#e0e0e0; font-size:15px; line-height:1.6;">
-                Merhaba <strong style="color:#0D8ABC;">${member.name}</strong>,
-              </p>
-              <p style="margin:0 0 18px 0; color:#a0a0a0; font-size:14px; line-height:1.7;">
-                <strong>${name}</strong> adlı alana ekip üyesi olarak dahil edildiniz.
-              </p>
-              <div style="margin:22px 0;">
-                <a href="https://community-tasks.vercel.app" style="display:inline-block; text-decoration:none; background:#0D8ABC; color:#ffffff; padding:12px 18px; border-radius:10px; font-weight:700; font-size:14px;">
-                  Alanları Görüntüle →
-                </a>
-              </div>
-              <p style="margin:18px 0 0 0; color:#64748b; font-size:12px; line-height:1.6;">
-                Bu e-posta otomatik olarak gönderilmiştir. Lütfen bu e-posta adresine yanıt vermeyin.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-      `.trim();
-
-      await sendEmail(member.email, subjectMember, htmlMember);
-    }
-  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -357,7 +227,6 @@ export const AreaModal: React.FC<AreaModalProps> = ({
           leaderId,
         });
 
-        await sendAreaEmails(leaderId, teamIds);
       } else {
         if (!area?.id) throw new Error('Güncellenecek alan bulunamadı.');
 
@@ -376,7 +245,6 @@ export const AreaModal: React.FC<AreaModalProps> = ({
           leaderId,
         });
 
-        await sendAreaEmails(leaderId, teamIds);
       }
 
       onSuccess();

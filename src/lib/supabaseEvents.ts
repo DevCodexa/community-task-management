@@ -11,16 +11,12 @@ import {
   EventStaffWithMember,
   EventSpeaker,
   EventSpeakerWithSpeaker,
-
-
   EventError,
   EventQueryParams,
   PaginatedEventsResponse,
   EventStats,
   ValidationResult,
 } from '../types/event';
-
-
 
 
 // Re-export EventFormData for components
@@ -215,14 +211,10 @@ export const createEvent = async (eventData: EventFormData): Promise<FullEvent> 
     location: eventData.location || ''
   };
 
-  // DEBUG: Log exact Supabase payload
-  console.log('📤 CREATE EVENT PAYLOAD:', JSON.stringify(normalizedData, null, 2));
-
   const { data, error } = await supabase.from('events').insert([normalizedData]).select().single();
 
   if (error) throwError(error);
   
-  console.log('✅ CREATE EVENT SUCCESS:', data);
   return data;
 };
 
@@ -254,9 +246,6 @@ export const updateEvent = async (id: string, updateData: EventUpdateData): Prom
     Object.entries(safeUpdateData).filter(([_, v]) => v !== undefined)
   );
 
-  // DEBUG: Log exact Supabase payload
-  console.log('📤 UPDATE EVENT PAYLOAD (ID:', id, '):', JSON.stringify(updatePayload, null, 2));
-
   const { data, error } = await supabase
     .from('events')
     .update(updatePayload)
@@ -266,7 +255,6 @@ export const updateEvent = async (id: string, updateData: EventUpdateData): Prom
 
   if (error) throwError(error);
   
-  console.log('✅ UPDATE EVENT SUCCESS:', data);
   return data;
 };
 
@@ -334,166 +322,6 @@ export const addStaffToEvent = async (eventId: string, memberId: string): Promis
   return data;
 };
 
-/**
- * Bir etkinliğe konuşmacı ekler (NEW)
- */
-/**
- * Send speaker invite email notification
- * Fire-and-forget background task
- */
-const sendSpeakerInviteEmailNotification = async (
-  eventId: string,
-  speakerId: string
-): Promise<void> => {
-  try {
-    const [event, speakerResult] = await Promise.all([
-      getEventById(eventId),
-      supabase.from('speakers').select('full_name, email, title, company').eq('id', speakerId).single()
-    ]);
-
-    const speaker = speakerResult.data;
-    if (!speaker?.email || !event) {
-      console.warn('Missing speaker email or event, skipping invite');
-      return;
-    }
-
-    const startDate = new Date(event.start_date).toLocaleDateString('tr-TR', {
-      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-
-    const html = generateSpeakerInviteEmailHtml(
-      speaker.full_name,
-      event.title,
-      speaker.title || '',
-      speaker.company || '',
-      startDate,
-      event.location || ''
-    );
-
-    const { sendEmail } = await import('./brevo');
-    
-    await sendEmail(
-      speaker.email,
-      `🎤 Konuşmacı Daveti: ${event.title}`,
-      html
-    );
-
-    console.log('📧 Speaker invite sent to:', speaker.email);
-  } catch (err) {
-    console.warn('Failed to send speaker invite:', err);
-  }
-};
-
-/**
- * Generate HTML for speaker invite email
- */
-const generateSpeakerInviteEmailHtml = (
-  speakerName: string,
-  eventTitle: string,
-  speakerTitle: string,
-  speakerCompany: string,
-  startDate: string,
-  location: string
-): string => {
-  return `
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Konuşmacı Daveti</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f0f1a;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f0f1a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #1a1a2e; border-radius: 16px; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="padding: 32px 40px; text-align: center; background: linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%);">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
-                🎤 Konuşmacı Daveti
-              </h1>
-              <p style="margin: 8px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.8);">
-                Zincir Atarlı Topluluk
-              </p>
-            </td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 24px 0; font-size: 16px; color: #e0e0e0;">
-                Merhaba <strong style="color: #0D8ABC;">${speakerName}</strong> 🎉
-              </p>
-              <p style="margin: 0 0 32px 0; font-size: 15px; color: #a0a0a0; line-height: 1.6;">
-                "${eventTitle}" etkinliğimize <strong>konuşmacı</strong> olarak davetlisiniz!
-              </p>
-
-              <!-- Event Card -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #252542; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                <tr>
-                  <td>
-                    <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600; color: #ffffff;">
-                      ${eventTitle}
-                    </h2>
-                    <p style="margin: 0 0 16px 0; font-size: 14px; color: #a0a0a0;">
-                      <strong>${speakerTitle}</strong> - ${speakerCompany}
-                    </p>
-                    
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #3a3a5a;">
-                          <span style="font-size: 12px; color: #6a6a8a; text-transform: uppercase;">Tarih</span>
-                          <p style="margin: 4px 0 0 0; font-size: 14px; color: #4dabf7;">${startDate}</p>
-                        </td>
-                        ${location ? `
-                        <td style="padding: 8px 0; border-bottom: 1px solid #3a3a5a;">
-                          <span style="font-size: 12px; color: #6a6a8a; text-transform: uppercase;">Konum</span>
-                          <p style="margin: 4px 0 0 0; font-size: 14px; color: #40c057;">📍 ${location}</p>
-                        </td>` : ''}
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- CTA Buttons -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom: 16px;">
-                    <a href="https://community-tasks.vercel.app" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 10px; margin-right: 12px;">
-                      Daveti Onayla →
-                    </a>
-                    <a href="mailto:noreply@community-tasks.com" style="display: inline-block; padding: 14px 32px; background: #6c757d; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 10px;">
-                      Reddet
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 40px; text-align: center; border-top: 1px solid #3a3a5a;">
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6a6a8a;">
-                Bu davet otomatik olarak gönderilmiştir.
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #4a4a6a;">
-                © ${new Date().getFullYear()} Zincir Atarlı Task Management
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
-};
-
 export const addSpeakerToEvent = async (eventId: string, speakerId: string): Promise<EventSpeaker> => {
   const event = await getEventById(eventId);
   if (!event) throw new Error('Etkinlik bulunamadı');
@@ -523,197 +351,9 @@ export const addSpeakerToEvent = async (eventId: string, speakerId: string): Pro
 
   if (error) throwError(error);
 
-  // Send speaker invite email (fire-and-forget)
-  sendSpeakerInviteEmailNotification(eventId, speakerId).catch((err: any) => {
-    console.warn('Speaker invite email failed:', err);
-  });
-
   return data;
 };
 
-
-/**
- * Send email notification to event staff member
- * This runs in the background to not block the main operation
- */
-const sendEventStaffEmailNotification = async (
-  eventId: string,
-  memberId: string
-): Promise<void> => {
-  try {
-    // Get event and member details
-    const [event, memberResult] = await Promise.all([
-      getEventById(eventId),
-      supabase
-        .from('members')
-        .select('name, email')
-        .eq('id', memberId)
-        .single()
-    ]);
-
-    const member = memberResult.data;
-    if (!member?.email || !event) {
-// console.warn('Missing event or member email, skipping notification');
-      return;
-    }
-
-    // Format event dates
-    const startDate = new Date(event.start_date).toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    const endDate = new Date(event.end_date).toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    // Generate HTML email
-    const html = generateEventStaffEmailHtml(
-      member.name,
-      event.title,
-      event.description || '',
-      startDate,
-      endDate,
-      event.location || ''
-    );
-
-    // Send email via Brevo
-    const { sendEmail } = await import('./brevo');
-    
-    await sendEmail(
-      member.email,
-      `📅 Etkinlik Görevlisi Oldun: ${event.title}`,
-      html
-    );
-
-// console.log('📧 Event staff assignment email sent to:', member.email);
-  } catch (err) {
-// console.warn('Failed to send event staff email:', err);
-  }
-};
-
-/**
- * Generate HTML for event staff assignment email
- */
-const generateEventStaffEmailHtml = (
-  memberName: string,
-  eventTitle: string,
-  eventDescription: string,
-  startDate: string,
-  endDate: string,
-  location: string
-): string => {
-  return `
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Etkinlik Görevlisi Oldun</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f0f1a;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f0f1a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #1a1a2e; border-radius: 16px; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="padding: 32px 40px; text-align: center; background: linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%);">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
-                📅 Etkinlik Görevlisi Oldun
-              </h1>
-              <p style="margin: 8px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.8);">
-                Zincir Atarlı Topluluk
-              </p>
-            </td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 24px 0; font-size: 16px; color: #e0e0e0;">
-                Merhaba <strong style="color: #0D8ABC;">${memberName}</strong> 👋
-              </p>
-              <p style="margin: 0 0 32px 0; font-size: 15px; color: #a0a0a0; line-height: 1.6;">
-                Bir etkinlikte görevli olarak eklendin! Aşağıda etkinlik detaylarını bulabilirsin.
-              </p>
-
-              <!-- Event Card -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #252542; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                <tr>
-                  <td>
-                    <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600; color: #ffffff;">
-                      ${eventTitle}
-                    </h2>
-                    ${eventDescription ? `
-                    <p style="margin: 0 0 16px 0; font-size: 14px; color: #a0a0a0; line-height: 1.5;">
-                      ${eventDescription}
-                    </p>
-                    ` : ''}
-                    
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #3a3a5a;">
-                          <span style="font-size: 12px; color: #6a6a8a; text-transform: uppercase; letter-spacing: 0.5px;">Başlangıç</span>
-                          <p style="margin: 4px 0 0 0; font-size: 14px; color: #4dabf7; font-weight: 500;">${startDate}</p>
-                        </td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #3a3a5a;">
-                          <span style="font-size: 12px; color: #6a6a8a; text-transform: uppercase; letter-spacing: 0.5px;">Bitiş</span>
-                          <p style="margin: 4px 0 0 0; font-size: 14px; color: #ff6b6b; font-weight: 500;">${endDate}</p>
-                        </td>
-                      </tr>
-                      ${location ? `
-                      <tr>
-                        <td colspan="2" style="padding: 8px 0;">
-                          <span style="font-size: 12px; color: #6a6a8a; text-transform: uppercase; letter-spacing: 0.5px;">Konum</span>
-                          <p style="margin: 4px 0 0 0; font-size: 14px; color: #40c057;">📍 ${location}</p>
-                        </td>
-                      </tr>
-                      ` : ''}
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center">
-                    <a href="https://community-tasks.vercel.app" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #0D8ABC 0%, #0a6a8a 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 10px;">
-                      Etkinliği Görüntüle →
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 40px; text-align: center; border-top: 1px solid #3a3a5a;">
-              <p style="margin: 0 0 8px 0; font-size: 12px; color: #6a6a8a;">
-                Bu email otomatik olarak gönderilmiştir. Lütfen bu email'e yanıt vermeyin.
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #4a4a6a;">
-                © ${new Date().getFullYear()} Zincir Atarlı Task Management
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
-};
 
 /**
  * Bir etkinlikten görevli çıkarır

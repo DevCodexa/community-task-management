@@ -64,12 +64,11 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   const handleEditClick = () => {
     onClose();
-    // Modal kapanınca yeniden render/viewport hesapları kaçmasın diye küçük ama deterministik gecikme
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        onEdit(task);
-      });
-    });
+    // Bir sonraki tick’te form modalını aç.
+    // Böylece hem detay modalı tamamen kapanır hem de yeni modal viewport/scroll konumunda sabit görünür.
+    setTimeout(() => {
+      onEdit(task);
+    }, 0);
   };
 
   const taskIsOverdue = isOverdue(task);

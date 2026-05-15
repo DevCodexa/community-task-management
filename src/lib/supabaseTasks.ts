@@ -197,57 +197,7 @@ export const createTask = async (taskData: TaskFormData): Promise<FullTask> => {
     await incrementActiveTasks(data.assignee_id);
   }
 
-  // Send email notification to assignee (fire-and-forget - don't await)
-  if (data.assignee_id) {
-    sendTaskEmailNotification(data.assignee_id, data).catch(err => {
-      console.warn('Email notification failed:', err);
-    });
-  }
-
   return data;
-};
-
-/**
- * Send email notification to task assignee
- * This runs in the background to not block the main operation
- */
-const sendTaskEmailNotification = async (
-  assigneeId: string,
-  task: FullTask
-): Promise<void> => {
-  try {
-    // Get assignee member details
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('name, email')
-      .eq('id', assigneeId)
-      .single();
-
-    if (memberError || !member?.email) {
-      console.warn('Assignee email not found, skipping notification');
-      return;
-    }
-
-    // Brevo üzerinden email gönder
-    const { sendTaskAssignmentEmail } = await import('./brevo');
-
-    console.log('Brevo tetiklendi, alıcı:', member.email);
-
-    
-    await sendTaskAssignmentEmail(
-      member.email,
-      member.name,
-      task.title,
-      task.description || '',
-      task.deadline,
-      task.points
-    );
-
-    console.log('📧 Task assignment email sent to:', member.email);
-  } catch (err) {
-    // Log but don't throw - email is optional
-    console.warn('Failed to send task assignment email:', err);
-  }
 };
 
 export const updateTask = async (id: string, updateData: any): Promise<FullTask> => {
@@ -280,14 +230,6 @@ export const updateTask = async (id: string, updateData: any): Promise<FullTask>
 
   const { data, error } = await supabase.from('tasks').update(normalizedData).eq('id', id).select().single();
   if (error) throwError(error);
-
-  // fire-and-forget: UX'i kilitlemeyelim
-  if (assigneeChanged && data?.assignee_id) {
-    sendTaskEmailNotification(data.assignee_id, data).catch(err => {
-      console.warn('Task assignment email failed:', err);
-    });
-  }
-
   return data;
 };
 
@@ -434,17 +376,17 @@ export const getTaskDistribution = async (): Promise<TaskDistributionItem[]> => 
     { 
       name: 'Süresi Geçmiş', 
       value: tasks.filter(t => calculateIsLate(t.deadline, t.status)).length, 
-      color: '#f87171' 
+      color: '#d41e1e' 
     },
     { 
       name: 'Geç Tamamlanan', 
       value: tasks.filter(t => ['completed', 'done'].includes(t.status) && t.updated_at && t.deadline && new Date(t.updated_at) > new Date(t.deadline)).length, 
-      color: '#dc2626' 
+      color: '#630303' 
     },
     { 
       name: 'Tamamlanan', 
       value: tasks.filter(t => ['completed', 'done'].includes(t.status) && (!t.deadline || new Date(t.updated_at) <= new Date(t.deadline))).length, 
-      color: '#40c057' 
+      color: '#4c9459' 
     },
   ];
 

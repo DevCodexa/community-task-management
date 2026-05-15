@@ -4,7 +4,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { Input } from '../ui/Input';
 import { createDepartment, updateDepartment, getDepartmentMembersByDepartmentId, setDepartmentMembers, OrgDepartment } from '../../lib/supabaseOrgHierarchy';
 import { searchMembers } from '../../lib/supabaseMembers';
-import { sendEmail } from '../../lib/brevo';
 import { supabase } from '../../lib/supabase';
 
 
