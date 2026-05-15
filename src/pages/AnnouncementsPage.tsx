@@ -53,11 +53,12 @@ export const AnnouncementsPage: React.FC = () => {
       const { data, totalPages: tp } = await getAnnouncements({
         search: search.trim() || undefined,
         type: typeFilter === 'All' ? undefined : typeFilter,
-        page,
-        limit,
+        page: 1,
+        limit: viewMode === 'table' ? 200 : limit,
         sortBy: 'created_at',
         sortOrder: 'desc',
       });
+
       setItems(data);
       setTotalPages(tp);
     } catch (e: any) {
@@ -68,19 +69,22 @@ export const AnnouncementsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (viewMode === 'table') return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, typeFilter]);
+  }, [page, typeFilter, viewMode]);
+
 
   // Search debounce-like behavior (simple)
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
-      load();
+      if (viewMode !== 'table') load();
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, viewMode]);
+
 
   const handleAdd = () => {
     setEditing(null);
@@ -262,8 +266,8 @@ export const AnnouncementsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination (card view only; table view pagination is inside AnnouncementTable) */}
+      {viewMode === 'card' && totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-3">
           <button
             disabled={page <= 1}
@@ -284,6 +288,7 @@ export const AnnouncementsPage: React.FC = () => {
           </button>
         </div>
       )}
+
 
       {/* Form Modal */}
       <AnnouncementFormModal
