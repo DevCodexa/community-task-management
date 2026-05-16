@@ -15,7 +15,6 @@ import {
   markAllAsRead,
   deleteNotification,
   subscribeToNotifications,
-  checkBirthdaysOnLoad,
   RealtimeNotificationCallback,
 } from '../lib/supabaseNotifications';
 
@@ -188,23 +187,7 @@ export const useNotifications = (
     }
   }, [notifications]);
 
-  // ===========================================================
-  // CHECK BIRTHDAYS
-  // ===========================================================
-
-  const checkBirthdays = useCallback(async (): Promise<number> => {
-    try {
-      const count = await checkBirthdaysOnLoad();
-      // Refresh notifications after birthday check
-      await fetchNotifications();
-      await refreshUnreadCount();
-      return count;
-    } catch (err: any) {
-      console.error('Check birthdays error:', err);
-      return 0;
-    }
-  }, [fetchNotifications, refreshUnreadCount]);
-
+  
   // ===========================================================
   // REAL-TIME SUBSCRIPTION
   // ===========================================================
@@ -278,7 +261,6 @@ export const useNotifications = (
     markAllAsRead: handleMarkAllAsRead,
     removeNotification,
     refreshUnreadCount,
-    checkBirthdays,
   };
 };
 
