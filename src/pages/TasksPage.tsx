@@ -24,7 +24,6 @@ export const TasksPage: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-
   const fetchTasks = async () => {
     setLoading(true);
     try {
@@ -161,7 +160,7 @@ const handleViewTask = (task: FullTask) => {
       </div>
 
       {/* Task Form Modal */}
-<TaskFormModal
+     <TaskFormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         task={selectedTask}
