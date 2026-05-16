@@ -96,10 +96,13 @@ const { isIceBlue } = useTheme();
           {/* Logo mark */}
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-ice-500/10 to-transparent" />
-            {/*<span className="relative z-10 text-sm font-bold text-white">T</span>*/}
-            {settings.logo_url && (
-              <img src={settings.logo_url} alt="Logo" className="h-full w-full object-contain" />
+            {settings.logo_url ? (
+              <img src={settings.logo_url} alt="Logo" className="relative z-10 h-full w-full object-contain p-1" />
+            ) : (
+              <span className="relative z-10 text-sm font-bold text-white">T</span>
             )}
+
+
 
           </div>
 

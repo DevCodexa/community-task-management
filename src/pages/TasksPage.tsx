@@ -1,22 +1,29 @@
-import React, { useState, useEffect,  } from 'react';
-import { LayoutList, Kanban, Plus, Trash,  } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutList, Kanban, Plus, Trash } from 'lucide-react';
 import { TaskTable } from '../components/tasks/TaskTable';
 import { TaskFormModal } from '../components/tasks/TaskFormModal';
 import { TaskDetailsModal } from '../components/tasks/TaskDetailsModal';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { FullTask } from '../types/task';
-import { getTasks } from '../lib/supabaseTasks';
-import { deleteTask } from '../lib/supabaseTasks';
+import { getTasks, deleteTask } from '../lib/supabaseTasks';
+import { ArchivedTaskTable } from '../components/tasks/ArchivedTaskTable';
+import { getArchivedTasks } from '../lib/supabaseTasksArchive';
+import { ArchivedTask } from '../types/taskArchive';
 
 export const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<FullTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+  const [archivedTasks, setArchivedTasks] = useState<ArchivedTask[]>([]);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+
+  const [viewMode, setViewMode] = useState<'table' | 'kanban' | 'archive'>('kanban');
+
   const [selectedTask, setSelectedTask] = useState<FullTask | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewedTask, setViewedTask] = useState<FullTask | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -38,6 +45,21 @@ export const TasksPage: React.FC = () => {
     setSelectedTask(task);
     setIsFormOpen(true);
   };
+
+  useEffect(() => {
+    if (viewMode !== 'archive') return;
+    setArchiveLoading(true);
+    (async () => {
+      try {
+        const res = await getArchivedTasks();
+        setArchivedTasks(res.data || []);
+      } catch (e) {
+        console.error('Arşiv yüklenemedi:', e);
+      } finally {
+        setArchiveLoading(false);
+      }
+    })();
+  }, [viewMode]);
 
   const handleAdd = () => {
     setSelectedTask(null);
@@ -86,8 +108,8 @@ const handleViewTask = (task: FullTask) => {
             <button
               onClick={() => setViewMode('kanban')}
               className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
-                viewMode === 'kanban' 
-                  ? 'bg-gradient-to-r from-ice-500 to-blue-500 text-white shadow-lg' 
+                viewMode === 'kanban'
+                  ? 'bg-gradient-to-r from-ice-500 to-blue-500 text-white shadow-lg'
                   : 'text-silver-400 hover:text-silver-200'
               }`}
             >
@@ -97,13 +119,23 @@ const handleViewTask = (task: FullTask) => {
             <button
               onClick={() => setViewMode('table')}
               className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
-                viewMode === 'table' 
-                  ? 'bg-gradient-to-r from-ice-500 to-blue-500 text-white shadow-lg' 
+                viewMode === 'table'
+                  ? 'bg-gradient-to-r from-ice-500 to-blue-500 text-white shadow-lg'
                   : 'text-silver-400 hover:text-silver-200'
               }`}
             >
               <LayoutList className="h-4 w-4" />
               <span className="text-xs font-medium">Tablo</span>
+            </button>
+            <button
+              onClick={() => setViewMode('archive')}
+              className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
+                viewMode === 'archive'
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg'
+                  : 'text-silver-400 hover:text-silver-200'
+              }`}
+            >
+              <span className="text-xs font-medium">Arşiv</span>
             </button>
           </div>
         </div>
@@ -114,7 +146,7 @@ const handleViewTask = (task: FullTask) => {
         <div className="bg-coal-800/50 rounded-2xl overflow-hidden">
           {viewMode === 'kanban' ? (
             <KanbanBoard />
-          ) : (
+          ) : viewMode === 'table' ? (
             <TaskTable
               tasks={tasks}
               onEdit={handleEdit}
@@ -122,6 +154,8 @@ const handleViewTask = (task: FullTask) => {
               onView={handleViewTask}
               loading={loading}
             />
+          ) : (
+            <ArchivedTaskTable tasks={archivedTasks} loading={archiveLoading} />
           )}
         </div>
       </div>
@@ -133,6 +167,7 @@ const handleViewTask = (task: FullTask) => {
         task={selectedTask}
         onSuccess={handleFormSuccess}
       />
+
 
       {/* Task Details Modal */}
       <TaskDetailsModal

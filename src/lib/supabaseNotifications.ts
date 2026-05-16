@@ -391,30 +391,6 @@ export const subscribeToNotifications = (
   };
 };
 
-// -----------------------------------------------------------
-// 7. BIRTHDAY CHECK
-// -----------------------------------------------------------
-
-/**
- * Bugün doğum günü olan üyeleri kontrol et ve bildirim oluştur
- * (Bu fonksiyon app yüklendiğinde çağrılmalı)
- */
-export const checkBirthdaysOnLoad = async (): Promise<number> => {
-  // Call the database function to check birthdays
-  const { data, error } = await supabase.rpc('check_birthdays_today');
-
-  if (error) {
-    // If RPC function doesn't exist, handle gracefully
-    console.warn(
-      'Birthday check function not available:',
-      error.message
-    );
-    return 0;
-  }
-
-  // data contains the count of new birthday notifications created
-  return data?.length || 0;
-};
 
 // -----------------------------------------------------------
 // 8. MANUAL NOTIFICATION CREATE (for testing)

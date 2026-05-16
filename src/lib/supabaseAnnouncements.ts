@@ -197,9 +197,6 @@ export const createAnnouncement = async (data: AnnouncementFormData): Promise<Fu
   // Members
   await setAnnouncementMembers(created.id, data.memberIds);
 
-  // Mail - fire-and-forget
-  sendAnnouncementMembersEmailNotification(created.id, created.title, data.memberIds).catch(() => {});
-
   return created;
 };
 
@@ -218,8 +215,7 @@ export const updateAnnouncement = async (id: string, update: AnnouncementUpdateD
   // Update members if provided
   if (update.memberIds) {
     await setAnnouncementMembers(id, update.memberIds);
-    // Mail fire-and-forget
-    sendAnnouncementMembersEmailNotification(id, updated.title, update.memberIds).catch(() => {});
+    
   }
 
   return updated;

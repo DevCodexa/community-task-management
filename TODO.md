@@ -1,14 +1,12 @@
-# TODO
+# TODO - Done → 7 Gün Sonra Arşiv
 
-## Completed
-- (placeholder)
-
-## Next steps
-1. Repo içinde `members` insert/upsert ile ilgili 409 Conflict akışını doğrula.
-2. Mail gönderimini idempotent yapmak için `email_logs` mekanizmasını ekle (DB + kod).
-3. Supabase DB tarafında `email_logs` tablosu ve unique index (type,to) oluşturuldu.
-4. `createMember()` içinde onboarding maili, `email_logs` içine ilk kez insert olunca gönder.
-5. RLS/policy ayarlarını doğrula.
-6. Test: Aynı üyeyi iki kez create et / aynı request’i yeniden gönder → mail sadece 1 kez gitmeli.
+- [ ] Repo içinde mevcut task/kanban/arşiv akışını incele (tamamlandı: KanbanBoard/TaskTable/TasksPage/SupabaseTasks okundu)
+- [x] DB tarafı için yeni arşiv tablosu şeması tasarla (archived_tasks)
+- [x] `archive_done_tasks_older_than_7_days()` DB function’ını yaz
+- [x] Done->Arşive taşıma için trigger/manuel çağrılabilir script planla
+- [ ] `src/lib/supabaseTasks.ts` içine `getArchivedTasks()` ekle (şimdilik ayrı service: `supabaseTasksArchive.ts`)
+- [x] `src/components/tasks/ArchivedTaskTable.tsx` yeni component ekle (tamamlayan/tamamlanma tarihi sütunlarıyla)
+- [x] `src/pages/TasksPage.tsx` içine Arşiv butonu + viewMode `archive` ekle
+- [ ] Build/dev çalıştır ve arşiv görünümünü test et
 
 
