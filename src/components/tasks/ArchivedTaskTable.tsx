@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search,
-  Filter,
-  Trash2,
-  Edit3,
-  Eye,
   Loader2,
   AlertCircle,
 } from 'lucide-react';

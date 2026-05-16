@@ -47,8 +47,8 @@ interface UseNotificationsReturn {
   markAllAsRead: () => Promise<void>;
   removeNotification: (id: string) => Promise<void>;
   refreshUnreadCount: () => Promise<void>;
-  checkBirthdays: () => Promise<number>;
 }
+
 
 // ===========================================================
 // HOOK IMPLEMENTATION
@@ -73,7 +73,7 @@ export const useNotifications = (
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<NotificationStats | null>(null);
+  const [stats] = useState<NotificationStats | null>(null);
 
   // Real-time unsubscribe function
   const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
@@ -232,10 +232,6 @@ export const useNotifications = (
       // Get initial unread count
       await refreshUnreadCount();
 
-      // Check birthdays if enabled
-      if (shouldCheckBirthdays) {
-        await checkBirthdays();
-      }
 
       setIsLoading(false);
     };

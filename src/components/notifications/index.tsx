@@ -3,7 +3,6 @@
    =========================================================== */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNotifications } from '../../hooks/useNotifications';
 import { NavbarBell } from './NavbarBell';
 import { NotificationDropdown } from './NotificationDropdown';
@@ -30,9 +29,7 @@ export const NotificationContainer: React.FC = () => {
     markAsRead,
     markAllAsRead,
     removeNotification,
-    checkBirthdays,
   } = useNotifications({
-    initialLimit: 20,
     enableRealtime: true,
     checkBirthdays: true,
   });
