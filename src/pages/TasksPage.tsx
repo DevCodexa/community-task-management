@@ -65,7 +65,6 @@ export const TasksPage: React.FC = () => {
     setSelectedTask(null);
     setIsFormOpen(true);
   };
-  
 
   const handleFormSuccess = () => {
     fetchTasks();
