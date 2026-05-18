@@ -1,5 +1,5 @@
 const SUPABASE_FUNCTION_URL =
-  "https://https://vbokappwelyrvoxnkigp.supabase.co/functions/v1/send-email";
+  "https://vbokappwelyrvoxnkigp.supabase.co/functions/v1/send-email";
 
 export async function sendMail(to: string, subject: string, html: string) {
   const res = await fetch(SUPABASE_FUNCTION_URL, {
