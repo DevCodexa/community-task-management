@@ -90,9 +90,15 @@ async function insertSendLog(params: {
   eventType: 'sent' | 'failed';
   eventData: Record<string, unknown>;
 }): Promise<void> {
+  log(
+    `insertSendLog: queueId=${params.queueId} recipient=${params.recipientEmail} template=${params.templateCode} eventType=${params.eventType}`
+  );
+
   const { error } = await (params.supabase as unknown as {
     from: (table: string) => {
-      insert: (values: Array<Record<string, unknown>>) => Promise<{ error: { message: string } | null }>;
+      insert: (
+        values: Array<Record<string, unknown>>
+      ) => Promise<{ error: { message: string } | null }>;
     };
   }).from('email_send_logs').insert([
     {
@@ -100,11 +106,16 @@ async function insertSendLog(params: {
       recipient_email: params.recipientEmail,
       template_code: params.templateCode,
       event_type: params.eventType,
-      event_data: params.eventData
-    }
+      event_data: params.eventData,
+    },
   ]);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    log(`insertSendLog ERROR: ${error.message}`);
+    throw new Error(error.message);
+  }
+
+  log(`insertSendLog OK: queueId=${params.queueId}`);
 }
 
 async function markQueueRowSuccess(params: {

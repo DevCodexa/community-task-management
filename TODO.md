@@ -1,9 +1,7 @@
-# TODO - Email Worker (Brevo + Supabase)
+# TODO
 
-- [ ] Plan onaylandı.
-- [ ] `email-worker/` dizinini ve Node/TS proje iskeletini oluştur.
-- [ ] `email-worker/package.json` ve `email-worker/tsconfig.json` dosyalarını ekle.
-- [ ] İstenen 10+ dosyayı (types, supabaseClient, settingsLoader, templateEngine, brevo, worker, index, package, tsconfig, env) tam içerik olarak oluştur.
-- [ ] Worker mantığını DB şemasıyla uyumlu hale getir (günlük limit, öncelik, retry, batch=50, loglar, idempotency).
-- [ ] Basit compile testi: `email-worker` klasöründe `npm i` + `npm run build`.
+## Email logs için (task/performance debug)
+- [x] Email-worker içindeki worker akışına her queue item için `insertSendLog` çağrısı öncesi/sonrası log ekle.
+- [ ] (Sonraki adım) Worker loglarında `insertSendLog ERROR` var mı kontrol et; yoksa `email_send_logs` RLS/permission veya column mismatch ihtimalini doğrula.
+- [ ] (Sonraki adım) `email_send_logs` insert’inde hata alınıyorsa error message + Supabase response detaylarını loglayacak şekilde genişlet.
 
