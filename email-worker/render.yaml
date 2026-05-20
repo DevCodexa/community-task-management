@@ -7,7 +7,8 @@ services:
     env: global
     plan: free
     buildCommand: "docker build -t email-worker ."
-    startCommand: "node /app/dist/index.js"
+    startCommand: "dist/index.js"
+
     envVars:
       - key: NODE_ENV
         value: "production"
