@@ -123,15 +123,20 @@ async function insertSendLog(params: {
   eventType: 'sent' | 'failed';
   eventData: Record<string, unknown>;
 }): Promise<void> {
+  // email_send_logs.queue_id => bigint (DB)
+  // Supabase/Postgres tip coercion string yerine sayıyla gelirse daha sağlıklı.
+  const queueIdNum = Number(params.queueId);
+  const queueIdNumOk = Number.isFinite(queueIdNum);
+
   const { error } = await (params.supabase as unknown as {
     from: (_table: string) => {
-      insert: (values: Array<Record<string, unknown>>) => Promise<{ error: { message: string } | null }>;
+      insert: (values: Array<Record<string, unknown>>) => Promise<{
+        error: { message: string; details?: string; hint?: string } | null;
+      }>;
     };
   }).from('email_send_logs').insert([
     {
-      // NOTE: email_send_logs.queue_id is bigint in SQL. If your actual schema differs,
-      // adjust this mapping.
-      queue_id: params.queueId,
+      queue_id: queueIdNumOk ? queueIdNum : params.queueId,
       recipient_email: params.recipientEmail,
       template_code: params.templateCode,
       event_type: params.eventType,
@@ -139,8 +144,13 @@ async function insertSendLog(params: {
     }
   ]);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    const detail = [error.message, error.details, error.hint].filter(Boolean).join(' | ');
+    log(`insertSendLog ERROR: ${detail}`);
+    throw new Error(detail);
+  }
 }
+
 
 async function markQueueRowSuccess(params: {
   supabase: ReturnType<typeof getSupabaseClient>;
