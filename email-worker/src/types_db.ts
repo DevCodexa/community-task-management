@@ -4,21 +4,27 @@
 export interface Database {
   public: {
     Tables: {
-      email_queue: {
+      speaker_email_queue: {
         Row: {
-          id: number;
-          recipient_email: string;
-          recipient_name: string | null;
-          template_code: string;
-          template_params: Record<string, string>;
-          priority: 'low' | 'medium' | 'high';
+          id: string;
+          speaker_id: string;
+          email_type: string;
           status: 'pending' | 'sent' | 'failed';
-          attempt_count: number;
-          last_attempt_at: string | null;
-          brevo_message_id: string | null;
           error_message: string | null;
+          retry_count: number;
+          scheduled_at: string;
+          sent_at: string | null;
           created_at: string;
-          updated_at: string;
+        };
+      };
+      speakers: {
+        Row: {
+          id: string;
+          email: string | null;
+          full_name: string | null;
+          title: string | null;
+          company: string | null;
+          status: string;
         };
       };
       email_templates: {
@@ -51,7 +57,9 @@ export interface Database {
           created_at: string;
         };
       };
+
     };
   };
 }
+
 

@@ -1,4 +1,4 @@
-import type { BrevoSendPayload, EmailQueueItem, EmailSettings, EmailTemplate } from './types';
+import type { BrevoSendPayload, EmailSettings, EmailTemplate, SpeakerEmailQueueItem } from './types';
 import { loadEmailSettings } from './settingsLoader';
 import { getSupabaseClient } from './supabaseClient';
 import { renderTemplate, renderSubject } from './templateEngine';
@@ -11,15 +11,8 @@ function formatTimestamp(d: Date): string {
 
 function log(message: string): void {
   const ts = formatTimestamp(new Date());
-  // Kural: [EmailWorker] [2024-01-15 14:30:00] mesaj
   // eslint-disable-next-line no-console
   console.log(`[EmailWorker] [${ts}] ${message}`);
-}
-
-function priorityRank(priority: EmailQueueItem['priority']): number {
-  if (priority === 'high') return 0;
-  if (priority === 'medium') return 1;
-  return 2;
 }
 
 function getHttpStatusFromError(e: unknown): number | undefined {
@@ -32,17 +25,26 @@ function getHttpStatusFromError(e: unknown): number | undefined {
   return undefined;
 }
 
+type RenderParams = Record<string, string>;
+
+function buildTemplateParams(item: SpeakerEmailQueueItem): RenderParams {
+  return {
+    full_name: item.full_name ?? '',
+    company: item.company ?? '',
+    title: item.title ?? ''
+  };
+}
+
 async function loadDailySentCount(supabase: ReturnType<typeof getSupabaseClient>): Promise<number> {
   const dateStr = new Date().toISOString().slice(0, 10);
 
   const { data, error } = await supabase
-    .from('email_queue')
+    .from('email_send_logs')
     .select('id', { count: 'exact' })
-    .eq('status', 'sent')
-    .gte('sent_at', dateStr);
+    .eq('event_type', 'sent')
+    .gte('created_at', dateStr);
 
   if (error) throw new Error(error.message);
-
   if (Array.isArray(data)) return data.length;
   return 0;
 }
@@ -51,19 +53,50 @@ async function fetchPendingBatch(
   supabase: ReturnType<typeof getSupabaseClient>,
   retryLimit: number,
   batchSize: number
-): Promise<EmailQueueItem[]> {
+): Promise<SpeakerEmailQueueItem[]> {
   const { data, error } = await supabase
-    .from('email_queue')
-    .select('*')
+    .from('speaker_email_queue')
+    .select(
+      [
+        'id',
+        'speaker_id',
+        'email_type',
+        'status',
+        'retry_count',
+        'scheduled_at',
+        'sent_at',
+        'created_at',
+        'error_message',
+        'speakers(email, full_name, title, company)'
+      ].join(',')
+    )
     .eq('status', 'pending')
-    .lt('attempt_count', retryLimit);
+    .lte('scheduled_at', new Date().toISOString())
+    .lt('retry_count', retryLimit)
+    .order('created_at', { ascending: true })
+    .limit(batchSize);
 
   if (error) throw new Error(error.message);
   if (!data) return [];
 
-  const items = data as unknown as EmailQueueItem[];
-  items.sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority));
-  return items.slice(0, batchSize);
+  return (data as any[]).map((row) => {
+    const speaker = Array.isArray(row.speakers) ? row.speakers[0] : row.speakers;
+    return {
+      id: row.id,
+      speaker_id: row.speaker_id,
+      email_type: row.email_type,
+      status: row.status,
+      retry_count: row.retry_count,
+      scheduled_at: row.scheduled_at,
+      sent_at: row.sent_at,
+      created_at: row.created_at,
+      error_message: row.error_message,
+      email: speaker?.email ?? '',
+      full_name: speaker?.full_name ?? null,
+      title: speaker?.title ?? null,
+      company: speaker?.company ?? null
+    } as SpeakerEmailQueueItem;
+  });
 }
 
 async function fetchTemplate(
@@ -84,59 +117,49 @@ async function fetchTemplate(
 
 async function insertSendLog(params: {
   supabase: ReturnType<typeof getSupabaseClient>;
-  queueId: number;
+  queueId: string;
   recipientEmail: string;
   templateCode: string;
   eventType: 'sent' | 'failed';
   eventData: Record<string, unknown>;
 }): Promise<void> {
-  log(
-    `insertSendLog: queueId=${params.queueId} recipient=${params.recipientEmail} template=${params.templateCode} eventType=${params.eventType}`
-  );
-
   const { error } = await (params.supabase as unknown as {
-    from: (table: string) => {
-      insert: (
-        values: Array<Record<string, unknown>>
-      ) => Promise<{ error: { message: string } | null }>;
+    from: (_table: string) => {
+      insert: (values: Array<Record<string, unknown>>) => Promise<{ error: { message: string } | null }>;
     };
   }).from('email_send_logs').insert([
     {
+      // NOTE: email_send_logs.queue_id is bigint in SQL. If your actual schema differs,
+      // adjust this mapping.
       queue_id: params.queueId,
       recipient_email: params.recipientEmail,
       template_code: params.templateCode,
       event_type: params.eventType,
-      event_data: params.eventData,
-    },
+      event_data: params.eventData
+    }
   ]);
 
-  if (error) {
-    log(`insertSendLog ERROR: ${error.message}`);
-    throw new Error(error.message);
-  }
-
-  log(`insertSendLog OK: queueId=${params.queueId}`);
+  if (error) throw new Error(error.message);
 }
 
 async function markQueueRowSuccess(params: {
   supabase: ReturnType<typeof getSupabaseClient>;
-  queueId: number;
+  queueId: string;
   brevoMessageId: string;
 }): Promise<void> {
   const nowIso = new Date().toISOString();
 
   const { error } = await (params.supabase as unknown as {
-    from: (table: string) => {
-      update: (values: Record<string, unknown>) => {
-        eq: (col: string, value: number) => Promise<{ error: { message: string } | null }>;
+    from: (_table: string) => {
+      update: (_values: Record<string, unknown>) => {
+        eq: (_col: string, _value: string) => Promise<{ error: { message: string } | null }>;
       };
     };
   })
-    .from('email_queue')
+    .from('speaker_email_queue')
     .update({
       status: 'sent',
       sent_at: nowIso,
-      brevo_message_id: params.brevoMessageId,
       error_message: null
     })
     .eq('id', params.queueId);
@@ -146,51 +169,34 @@ async function markQueueRowSuccess(params: {
 
 async function markQueueRowFailure(params: {
   supabase: ReturnType<typeof getSupabaseClient>;
-  queueId: number;
+  queueId: string;
   attemptCount: number;
   errorMessage: string;
   status: 'pending' | 'failed';
 }): Promise<void> {
   const nowIso = new Date().toISOString();
+  const scheduledAt =
+    params.status === 'pending'
+      ? new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      : undefined;
 
   const { error } = await (params.supabase as unknown as {
-    from: (table: string) => {
-      update: (values: Record<string, unknown>) => {
-        eq: (col: string, value: number) => Promise<{ error: { message: string } | null }>;
+    from: (_table: string) => {
+      update: (_values: Record<string, unknown>) => {
+        eq: (_col: string, _value: string) => Promise<{ error: { message: string } | null }>;
       };
     };
   })
-    .from('email_queue')
+    .from('speaker_email_queue')
     .update({
       status: params.status,
-      attempt_count: params.attemptCount,
-      last_attempt_at: nowIso,
-      error_message: params.errorMessage
-    })
-    .eq('id', params.queueId);
-
-  if (error) throw new Error(error.message);
-}
-
-async function markAttemptStart(params: {
-  supabase: ReturnType<typeof getSupabaseClient>;
-  queueId: number;
-  nextAttemptCount: number;
-}): Promise<void> {
-  const nowIso = new Date().toISOString();
-
-  const { error } = await (params.supabase as unknown as {
-    from: (table: string) => {
-      update: (values: Record<string, unknown>) => {
-        eq: (col: string, value: number) => Promise<{ error: { message: string } | null }>;
-      };
-    };
-  })
-    .from('email_queue')
-    .update({
-      attempt_count: params.nextAttemptCount,
-      last_attempt_at: nowIso
-    })
+      retry_count: params.attemptCount,
+      error_message: params.errorMessage,
+      // speaker_email_queue schema has scheduled_at
+      scheduled_at: scheduledAt,
+      sent_at: params.status === 'failed' ? null : undefined,
+      last_attempt_at: undefined
+    } as Record<string, unknown>)
     .eq('id', params.queueId);
 
   if (error) throw new Error(error.message);
@@ -198,16 +204,18 @@ async function markAttemptStart(params: {
 
 function toBrevoPayload(params: {
   settings: EmailSettings;
-  queueItem: EmailQueueItem;
-  template: EmailTemplate;
+  recipientEmail: string;
+  recipientName: string | null;
   renderedSubject: string;
   renderedHtml: string;
+  template: EmailTemplate;
+  templateParams: RenderParams;
 }): BrevoSendPayload {
-  const { settings, queueItem, template, renderedSubject, renderedHtml } = params;
+  const { settings, recipientEmail, recipientName, renderedSubject, renderedHtml, template, templateParams } = params;
 
   const base: BrevoSendPayload = {
     sender: { name: settings.sender_name, email: settings.sender_email },
-    to: [{ email: queueItem.recipient_email, name: queueItem.recipient_name ?? undefined }],
+    to: [{ email: recipientEmail, name: recipientName ?? undefined }],
     subject: renderedSubject,
     htmlContent: renderedHtml
   };
@@ -219,7 +227,7 @@ function toBrevoPayload(params: {
       subject: '',
       htmlContent: '',
       templateId: template.brevo_template_id,
-      params: queueItem.template_params
+      params: templateParams
     };
   }
 
@@ -259,19 +267,19 @@ export async function processEmailQueue(): Promise<void> {
   let skippedCount = 0;
 
   for (const item of pending) {
-    if (sentCount + failedCount >= batchSize) {
+    const recipientEmail = item.email;
+    if (!recipientEmail) {
       skippedCount += 1;
       continue;
     }
 
-    const nextAttemptCount = item.attempt_count + 1;
+    const templateCode = item.email_type;
+    const nextAttemptCount = item.retry_count + 1;
 
-    await markAttemptStart({ supabase, queueId: item.id, nextAttemptCount });
-
-    const template = await fetchTemplate(supabase, item.template_code);
+    const template = await fetchTemplate(supabase, templateCode);
     if (!template) {
       const status: 'pending' | 'failed' = nextAttemptCount >= settings.retry_limit ? 'failed' : 'pending';
-      const errorMessage = 'Template bulunamadı';
+      const errorMessage = `Template not found for email_type=${templateCode}`;
 
       await markQueueRowFailure({
         supabase,
@@ -284,8 +292,8 @@ export async function processEmailQueue(): Promise<void> {
       await insertSendLog({
         supabase,
         queueId: item.id,
-        recipientEmail: item.recipient_email,
-        templateCode: item.template_code,
+        recipientEmail,
+        templateCode,
         eventType: 'failed',
         eventData: { attempt: nextAttemptCount, error: errorMessage }
       });
@@ -295,16 +303,19 @@ export async function processEmailQueue(): Promise<void> {
       continue;
     }
 
-    const renderedSubject = renderSubject(template.subject, item.template_params);
-    const renderedHtml = renderTemplate(template.html_content, item.template_params);
+    const templateParams = buildTemplateParams(item);
+    const renderedSubject = renderSubject(template.subject, templateParams);
+    const renderedHtml = renderTemplate(template.html_content, templateParams);
 
     try {
       const payload = toBrevoPayload({
         settings,
-        queueItem: item,
-        template,
+        recipientEmail,
+        recipientName: item.full_name,
         renderedSubject,
-        renderedHtml
+        renderedHtml,
+        template,
+        templateParams
       });
 
       const response = await sendEmail(payload, settings.brevo_api_key);
@@ -318,8 +329,8 @@ export async function processEmailQueue(): Promise<void> {
       await insertSendLog({
         supabase,
         queueId: item.id,
-        recipientEmail: item.recipient_email,
-        templateCode: item.template_code,
+        recipientEmail,
+        templateCode,
         eventType: 'sent',
         eventData: { attempt: nextAttemptCount, messageId: response.messageId }
       });
@@ -327,7 +338,7 @@ export async function processEmailQueue(): Promise<void> {
       sentCount += 1;
     } catch (e: unknown) {
       const httpStatus = getHttpStatusFromError(e);
-      const errorMessage = (e as Error).message;
+      const errorMessage = e instanceof Error ? e.message : String(e);
 
       const shouldFailNoRetry = httpStatus != null && httpStatus >= 400 && httpStatus < 500;
       const status: 'pending' | 'failed' = shouldFailNoRetry
@@ -347,8 +358,8 @@ export async function processEmailQueue(): Promise<void> {
       await insertSendLog({
         supabase,
         queueId: item.id,
-        recipientEmail: item.recipient_email,
-        templateCode: item.template_code,
+        recipientEmail,
+        templateCode,
         eventType: 'failed',
         eventData: {
           attempt: nextAttemptCount,
@@ -362,8 +373,6 @@ export async function processEmailQueue(): Promise<void> {
     }
   }
 
-  log(
-    `Batch tamamlandı: ✅ Gönderilen: ${sentCount} ❌ Başarısız: ${failedCount} ⏭️ Atlandı: ${skippedCount}`
-  );
+  log(`Batch tamamlandı: ✅ Gönderilen: ${sentCount} ❌ Başarısız: ${failedCount} ⏭️ Atlandı: ${skippedCount}`);
 }
 

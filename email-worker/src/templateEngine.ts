@@ -1,4 +1,5 @@
-import type { EmailQueueItem } from './types';
+import type { SpeakerEmailQueueItem } from './types';
+
 
 function renderWithParams(template: string, params: Record<string, string>): string {
   // Matches {{key}}
@@ -16,7 +17,9 @@ export function renderSubject(subject: string, params: Record<string, string>): 
   return renderWithParams(subject, params);
 }
 
-export function normalizeTemplateParams(params: EmailQueueItem['template_params']): Record<string, string> {
+export function normalizeTemplateParams(params: Record<string, unknown>): Record<string, string> {
+
+
   // Ensures Record<string,string> (Supabase jsonb may come as any/unknown)
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(params ?? {})) {

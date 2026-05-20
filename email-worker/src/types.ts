@@ -1,19 +1,23 @@
-export type EmailQueuePriority = 'low' | 'medium' | 'high';
 export type EmailQueueStatus = 'pending' | 'sent' | 'failed';
 
-export interface EmailQueueItem {
-  id: number;
-  recipient_email: string;
-  recipient_name: string | null;
-  template_code: string;
-  template_params: Record<string, string>;
-  priority: EmailQueuePriority;
+export interface SpeakerEmailQueueItem {
+  id: string; // uuid
+  speaker_id: string;
+  email_type: string;
   status: EmailQueueStatus;
-  attempt_count: number;
-  last_attempt_at: string | null;
-  brevo_message_id: string | null;
+  retry_count: number;
+  scheduled_at: string;
+  sent_at: string | null;
+  created_at: string;
   error_message: string | null;
+
+  // joined speakers fields used to render templates
+  email: string;
+  full_name: string | null;
+  title: string | null;
+  company: string | null;
 }
+
 
 export interface EmailTemplate {
   id: number;
