@@ -20,12 +20,17 @@ export const LoginScreen: React.FC = () => {
             <div className="glass-card absolute inset-0 m-auto flex h-64 w-64 flex-col items-center justify-center rounded-3xl">
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
                 <Link2 className="h-6 w-6 text-ice-400" />
+                <img
+                src="https://raw.githubusercontent.com/Orion-Tech-Community/OrionTeam/refs/heads/main/IMG_20260520_132031%20(1).png"
+                alt="Orion Team logo"
+                className="h-full w-full object-cover"
+              />
               </div>
               <h3 className="font-display text-lg font-semibold text-silver-200">
-                Yönetim Paneli
+               OTC Yönetim Paneli
               </h3>
               <p className="mt-2 max-w-[180px] text-center text-xs leading-relaxed text-silver-600">
-                Görevlerin birbiriyle bağlantılı ve koşullu ilerlemesi
+               🚀 Artık sende bir Orion'sun!
               </p>
             </div>
 
@@ -52,11 +57,15 @@ export const LoginScreen: React.FC = () => {
         <div className="w-full max-w-sm">
           {/* Logo / Marka */}
           <div className="mb-12 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-coal-500 bg-coal-700">
-              <Link2 className="h-4 w-4 text-ice-400" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-coal-500 bg-coal-700 overflow-hidden">
+              <img
+                src="https://raw.githubusercontent.com/Orion-Tech-Community/OrionTeam/refs/heads/main/IMG_20260520_132031%20(1).png"
+                alt="Orion Team logo"
+                className="h-full w-full object-cover"
+              />
             </div>
             <span className="font-display text-sm font-semibold tracking-wide text-silver-300">
-              CTM
+              Orion(Oiion) Tech Community
             </span>
           </div>
 
