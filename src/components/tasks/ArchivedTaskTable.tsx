@@ -94,9 +94,9 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
                 <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-silver-400">
                   Görev
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">
+                {/*<th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">
                   Atanan
-                </th>
+                </th>*/}
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Puan</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Son Tarih</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Durum</th>
@@ -122,17 +122,17 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
                   >
                     <td className="px-6 py-4">
                       <div>
-                        <div className="font-medium text-silver-100 group-hover:text-white">{task.title}</div>
+                        <div className="font-small text-silver-100 group-hover:text-white">{task.title}</div>
                         {task.description ? (
                           <div className="mt-2">
                             <p className="text-xs text-silver-500 text-left leading-relaxed">
-                              {task.description.length > 60 ? `${task.description.substring(0, 60)}...` : task.description}
+                              {task.description.length > 40 ? `${task.description.substring(0, 40)}...` : task.description}
                             </p>
                           </div>
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                   {/*} <td className="px-6 py-4 text-center">
                       {task.assignee_id ? (
                         <div className="text-xs text-silver-400">
                           {task.members?.name || 'Atandı'}
@@ -140,7 +140,7 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
                       ) : (
                         <span className="text-silver-500 px-2 py-1 bg-white/5 rounded-full text-xs">Boş</span>
                       )}
-                    </td>
+                    </td>*/}
                     <td className="px-6 py-4 text-center">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 text-emerald-400 text-sm font-bold border border-emerald-500/20">
                         {task.points}
