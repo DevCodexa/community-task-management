@@ -296,7 +296,8 @@ export const AreasPage: React.FC = () => {
                   <tr className="text-xs text-silver-600">
                     <th className="px-4 py-3 font-semibold">Alan Adı</th>
                     <th className="px-4 py-3 font-semibold">Açıklama</th>
-                    <th className="px-4 py-3 font-semibold">Alan Lideri</th>
+                    <th className="px-4 py-3 font-semibold">Sözcü</th>
+
                     <th className="px-4 py-3 font-semibold">Proje Sayısı</th>
                     <th className="px-4 py-3 font-semibold">Ekip Sayısı</th>
                     <th className="px-4 py-3 font-semibold">İşlemler</th>
@@ -319,7 +320,8 @@ export const AreasPage: React.FC = () => {
                           <div className="text-sm text-silver-600 line-clamp-1">{area.description || '—'}</div>
                         </td>
 
-                        {/* Alan Lideri */}
+                        {/* Sözcü */}
+
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div className="h-9 w-9 rounded-full border border-white/10 bg-white/[0.03] overflow-hidden flex items-center justify-center shrink-0">
@@ -338,7 +340,8 @@ export const AreasPage: React.FC = () => {
                             </div>
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-silver-100 truncate">{area.area_leader?.name || 'Atanmadı'}</div>
-                              <div className="text-xs text-silver-600 truncate">Lider</div>
+                              <div className="text-xs text-silver-600 truncate">Sözcü</div>
+
                             </div>
                           </div>
                         </td>

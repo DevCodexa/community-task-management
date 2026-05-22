@@ -78,7 +78,8 @@ export const AreaModal: React.FC<AreaModalProps> = ({
       }));
       setLeaderCandidates(mapped);
     } catch (e: any) {
-      setError(e?.message || 'Lider adayları yüklenemedi.');
+      setError(e?.message || 'Sözcü adayları yüklenemedi.');
+
     } finally {
       setLeaderLoading(false);
     }
@@ -196,7 +197,8 @@ export const AreaModal: React.FC<AreaModalProps> = ({
       return;
     }
     if (!selectedLeaderId) {
-      setError('Alan Lideri seçmelisiniz.');
+      setError('Sözcü seçmelisiniz.');
+
       return;
     }
 
@@ -297,8 +299,10 @@ export const AreaModal: React.FC<AreaModalProps> = ({
                 <Building2 className="h-4 w-4 text-ice-400" />
               </span>
               <h2 className="text-lg font-bold text-silver-100">{mode === 'edit' ? 'Alan Düzenle' : 'Alan Ekle'}</h2>
+
             </div>
-            <p className="mt-1 text-sm text-silver-600">Lider ve ekip üyelerini atayın.</p>
+            <p className="mt-1 text-sm text-silver-600">Sözcü ve ekip üyelerini atayın.</p>
+
           </div>
 
           <button
@@ -336,8 +340,10 @@ export const AreaModal: React.FC<AreaModalProps> = ({
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-silver-500">Alan Lideri</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-silver-500">Sözcü</p>
                   <p className="text-sm text-silver-400 mt-1">İsim veya e-posta ile ara.</p>
+
+
                 </div>
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-ice-500/20 bg-ice-500/10 text-ice-300">
                   <UserCheck className="h-3.5 w-3.5" />
@@ -350,17 +356,20 @@ export const AreaModal: React.FC<AreaModalProps> = ({
                 <input
                   value={leaderQuery}
                   onChange={(e) => setLeaderQuery(e.target.value)}
-                  placeholder="Lider ara..."
+                  placeholder="Sözcü ara..."
+
                   className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 text-silver-100 text-sm placeholder:text-silver-700 focus:outline-none focus:border-ice-500/50 focus:ring-1 focus:ring-ice-500/20 transition-all"
                 />
               </div>
 
               {leaderLoading ? (
-                <p className="text-sm text-silver-400 py-2">Lider adayları aranıyor...</p>
+                <p className="text-sm text-silver-400 py-2">Sözcü adayları aranıyor...</p>
+
               ) : (
                 <div className="max-h-52 overflow-auto pr-1">
                   {leaderCandidates.length === 0 ? (
-                    <p className="text-sm text-silver-600 py-2">Lider adayı bulunamadı.</p>
+                    <p className="text-sm text-silver-600 py-2">Sözcü adayı bulunamadı.</p>
+
                   ) : (
                     <div className="space-y-2">
                       {leaderCandidates.map((m) => {
@@ -414,7 +423,8 @@ export const AreaModal: React.FC<AreaModalProps> = ({
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-silver-500">Ekip Üyeleri</p>
-                  <p className="text-sm text-silver-400 mt-1">Çoklu seçim (lider dahil otomatik).</p>
+                  <p className="text-sm text-silver-400 mt-1">Çoklu seçim (Sözcü dahil otomatik).</p>
+
                 </div>
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-ice-500/20 bg-ice-500/10 text-ice-300">
                   <UserCheck className="h-3.5 w-3.5" />
@@ -431,7 +441,8 @@ export const AreaModal: React.FC<AreaModalProps> = ({
                   ) : (
                     allSelectedIds.map((id) => {
                       const candidate = [...leaderCandidates, ...teamCandidates].find((m) => m.id === id);
-                      const nameText = candidate?.name || (id === selectedLeaderId ? 'Lider' : 'Üye');
+                      const nameText = candidate?.name || (id === selectedLeaderId ? 'Sözcü' : 'Üye');
+
                       return (
                         <span
                           key={id}

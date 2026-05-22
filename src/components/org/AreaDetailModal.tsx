@@ -63,7 +63,8 @@ export const AreaDetailModal: React.FC<AreaDetailModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-silver-500">Alan Lideri</p>
+                  <p className="text-sm text-silver-500">Sözcü</p>
+
                   <p className="text-xl font-semibold text-silver-100">{leader?.name || 'Atanmadı'}</p>
                 </div>
               </div>
@@ -88,7 +89,8 @@ export const AreaDetailModal: React.FC<AreaDetailModalProps> = ({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.18em] text-silver-500">Ekip Üyeleri</p>
-                <p className="mt-1 text-xs text-silver-600">Lider dahil olmayan atanan üyeler</p>
+                <p className="mt-1 text-xs text-silver-600">Sözcü dahil olmayan atanan üyeler</p>
+
               </div>
             </div>
 
