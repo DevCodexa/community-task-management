@@ -16,6 +16,12 @@ export const TasksPage: React.FC = () => {
   const [archivedTasks, setArchivedTasks] = useState<ArchivedTask[]>([]);
   const [archiveLoading, setArchiveLoading] = useState(false);
 
+  // Archive paging
+  const archiveLimit = 10;
+  const [archivePage, setArchivePage] = useState(1);
+  const [archiveTotal, setArchiveTotal] = useState(0);
+
+
   const [viewMode, setViewMode] = useState<'table' | 'kanban' | 'archive'>('kanban');
 
   const [selectedTask, setSelectedTask] = useState<FullTask | null>(null);
@@ -47,23 +53,32 @@ export const TasksPage: React.FC = () => {
 
   useEffect(() => {
     if (viewMode !== 'archive') return;
+
     setArchiveLoading(true);
     (async () => {
       try {
-        const res = await getArchivedTasks();
+        const res = await getArchivedTasks({ page: archivePage, limit: archiveLimit });
         setArchivedTasks(res.data || []);
+        setArchiveTotal(res.total ?? 0);
       } catch (e) {
         console.error('Arşiv yüklenemedi:', e);
       } finally {
         setArchiveLoading(false);
       }
     })();
-  }, [viewMode]);
+  }, [viewMode, archivePage]);
+
 
   const handleAdd = () => {
     setSelectedTask(null);
     setIsFormOpen(true);
   };
+
+  useEffect(() => {
+    // whenever we enter archive mode, reset to first page
+    if (viewMode === 'archive') setArchivePage(1);
+  }, [viewMode]);
+
 
   const handleFormSuccess = () => {
     fetchTasks();
@@ -154,8 +169,16 @@ const handleViewTask = (task: FullTask) => {
               loading={loading}
             />
           ) : (
-            <ArchivedTaskTable tasks={archivedTasks} loading={archiveLoading} />
+            <ArchivedTaskTable
+              tasks={archivedTasks}
+              loading={archiveLoading}
+              currentPage={archivePage}
+              pageSize={archiveLimit}
+              total={archiveTotal}
+              onPageChange={(nextPage) => setArchivePage(nextPage)}
+            />
           )}
+
         </div>
       </div>
 

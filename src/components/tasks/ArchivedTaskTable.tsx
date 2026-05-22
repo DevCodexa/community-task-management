@@ -9,9 +9,22 @@ import { ArchivedTask } from '../../types/taskArchive';
 interface ArchivedTaskTableProps {
   tasks: ArchivedTask[];
   loading?: boolean;
+
+  currentPage: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
 }
 
-export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({ tasks, loading = false }) => {
+export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
+  tasks,
+  loading = false,
+  currentPage,
+  pageSize,
+  total,
+  onPageChange,
+}) => {
+
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTasks = useMemo(() => {
@@ -41,9 +54,19 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({ tasks, loa
     );
   }
 
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const formatRangeLabel = () => {
+    if (filteredTasks.length === 0) return `0 / 0 arşiv kaydı`;
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, total);
+    return `${start}-${end} / ${total} kayıt gösteriliyor`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-silver-600" />
           <input
@@ -145,8 +168,38 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({ tasks, loa
             </tbody>
           </table>
         </div>
+
+        <div className="border-t border-white/10 bg-white/5 px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-silver-400">
+          <div>
+            {filteredTasks.length > 0 ? (
+              <span>{formatRangeLabel()}</span>
+            ) : (
+              <span>Arşivde kayıt yok</span>
+            )}
+          </div>
+          <div className="inline-flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/5"
+            >
+              Önceki
+            </button>
+            <span className="min-w-[4rem] text-center">{`${currentPage} / ${totalPages}`}</span>
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/5"
+            >
+              Sonraki
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
 

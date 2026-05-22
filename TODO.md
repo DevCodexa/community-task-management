@@ -1,10 +1,10 @@
-## Email-worker migrasyonu (durum takibi)
+# TODO.md
 
-- [ ] Backend yokluğunu doğrula (Express/Nest entrypoint mevcut değil)
-- [ ] Email-worker cron/polling mantığını tek Node process’e taşıyacak yeni server giriş noktası tasarla (tek repo/tek servis)
-- [ ] Supabase speaker_email_queue + brevo send + status/retry güncelleme akışını ana uygulamaya bağla
-- [ ] Render deployment: sadece tek web service (worker ayrı olmayacak)
-- [ ] email-worker dizinini tamamen kaldır
-- [ ] Build/start komutları: sadece `node dist/index.js` çalışacak
-- [ ] Uygulama başlangıcında worker otomatik başlamalı
+## Archive Tasks Paging (10 kayıt/sayfa)
+- [ ] 1) `src/pages/TasksPage.tsx` içine arşiv sayfalama state’leri ekle (page, limit=10, total, hasPrev/hasNext).
+- [ ] 2) `viewMode === 'archive'` iken `getArchivedTasks({ page, limit })` çağır.
+- [ ] 3) `src/components/tasks/ArchivedTaskTable.tsx` içine sayfalama UI (Önceki / current / Sonraki) ekle.
+- [ ] 4) Arşiv modunda sayfa değişince tekrar fetch yap.
+- [x] 5) Hata olmadan derleme/test (npm run build veya dev build) çalıştır.
+
 
