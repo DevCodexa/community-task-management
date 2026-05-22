@@ -470,7 +470,9 @@ BEGIN
    WHERE m.id = NEW.user_id
      AND m.is_active = true;
 
-  SELECT p.title
+  -- org_projects tablosunda proje adı kolonunun adı farklı olabilir (name/title).
+  -- DB şemasındaki gerçek kolona göre güncelleyin.
+  SELECT COALESCE(p.name, p.title)
     INTO v_project_name
     FROM org_projects p
    WHERE p.id = NEW.project_id;
@@ -512,7 +514,7 @@ BEGIN
    WHERE m.id = NEW.user_id
      AND m.is_active = true;
 
-  SELECT d.title
+  SELECT COALESCE(d.name, d.title)
     INTO v_department_name
     FROM org_departments d
    WHERE d.id = NEW.department_id;
@@ -554,7 +556,7 @@ BEGIN
    WHERE m.id = NEW.user_id
      AND m.is_active = true;
 
-  SELECT a.title
+  SELECT COALESCE(a.name, a.title)
     INTO v_area_name
     FROM org_areas a
    WHERE a.id = NEW.area_id;
