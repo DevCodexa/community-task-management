@@ -3,6 +3,8 @@ import {
   Search,
   Loader2,
   AlertCircle,
+  Eye,
+  RotateCcw,
 } from 'lucide-react';
 import { ArchivedTask } from '../../types/taskArchive';
 
@@ -14,6 +16,9 @@ interface ArchivedTaskTableProps {
   pageSize: number;
   total: number;
   onPageChange: (page: number) => void;
+
+  onView: (task: ArchivedTask) => void;
+  onRestore: (archivedTaskId: string) => void | Promise<void>;
 }
 
 export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
@@ -23,6 +28,8 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
   pageSize,
   total,
   onPageChange,
+  onView,
+  onRestore,
 }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,12 +100,9 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Puan</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Son Tarih</th>
                 <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Durum</th>
-                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">
-                  Tamamlandı
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">
-                  Tamamlayan
-                </th>
+                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Tamamlandı</th>
+                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">Tamamlayan</th>
+                <th className="w-32 px-4 py-4 text-center text-xs font-bold uppercase tracking-wider text-silver-400">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -161,6 +165,26 @@ export const ArchivedTaskTable: React.FC<ArchivedTaskTableProps> = ({
                       <span className="text-xs text-silver-300">
                         {task.done_completed_by_name || 'Bilinmiyor'}
                       </span>
+                    </td>
+
+                    <td className="px-4 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => onView(task)}
+                          title="Detay"
+                          className="p-1.5 rounded-lg text-silver-500 hover:text-ice-400 hover:bg-ice-500/10 transition-all"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => onRestore(task.id)}
+                          title="Arşivden çıkar"
+                          className="p-1.5 rounded-lg text-silver-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

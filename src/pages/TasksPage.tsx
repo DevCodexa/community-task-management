@@ -9,6 +9,7 @@ import { getTasks, deleteTask } from '../lib/supabaseTasks';
 import { ArchivedTaskTable } from '../components/tasks/ArchivedTaskTable';
 import { getArchivedTasks } from '../lib/supabaseTasksArchive';
 import { ArchivedTask } from '../types/taskArchive';
+import { restoreArchivedTaskToDone } from '../lib/supabaseTasksRestore';
 
 export const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<FullTask[]>([]);
@@ -169,14 +170,33 @@ const handleViewTask = (task: FullTask) => {
               loading={loading}
             />
           ) : (
-            <ArchivedTaskTable
-              tasks={archivedTasks}
-              loading={archiveLoading}
-              currentPage={archivePage}
-              pageSize={archiveLimit}
-              total={archiveTotal}
-              onPageChange={(nextPage) => setArchivePage(nextPage)}
-            />
+              <ArchivedTaskTable
+                tasks={archivedTasks}
+                loading={archiveLoading}
+                currentPage={archivePage}
+                pageSize={archiveLimit}
+                total={archiveTotal}
+                onPageChange={(nextPage) => setArchivePage(nextPage)}
+                onView={(task) => {
+                  // archived task için detay modal’ı FullTask bekliyor; şu an archived modelinden minimal alanlarla dönüyoruz.
+                  setViewedTask(task as any);
+                  setIsDetailsOpen(true);
+                }}
+                onRestore={async (archivedTaskId) => {
+                  try {
+                    await restoreArchivedTaskToDone(archivedTaskId);
+
+                    // restore sonrası: arşiv listesini güncelle + aktif listeyi de yenile
+                    const res = await getArchivedTasks({ page: archivePage, limit: archiveLimit });
+                    setArchivedTasks(res.data || []);
+                    setArchiveTotal(res.total ?? 0);
+
+                    fetchTasks();
+                  } catch (e) {
+                    console.error('Arşivden çıkarma başarısız:', e);
+                  }
+                }}
+              />
           )}
 
         </div>
