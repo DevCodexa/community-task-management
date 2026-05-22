@@ -12,6 +12,8 @@ import {
   Image,
 } from 'lucide-react';
 import { createTask, updateTask, getMembersTaskCounts } from '../../lib/supabaseTasks';
+import { archiveTaskNow } from '../../lib/supabaseManualArchive';
+
 import { FullTask, TaskStatus, TASK_STATUS_VALUES, TaskFormData } from '../../types/task';
 import { FullMember } from '../../types/member';
 
@@ -41,7 +43,9 @@ const descriptionRef = useRef<HTMLTextAreaElement>(null);
 const [members, setMembers] = useState<FullMember[]>([]);
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
   const [error, setError] = useState('');
+
 
   useEffect(() => {
     if (isOpen) {
@@ -131,6 +135,23 @@ const fetchMembers = async () => {
       setLoading(false);
     }
   };
+
+  const handleManualArchive = async () => {
+    if (!task) return;
+    setArchiveLoading(true);
+    setError('');
+
+    try {
+      await archiveTaskNow(task.id);
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Arşivlenemedi');
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
 
   const handleImagePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
@@ -332,6 +353,28 @@ const fetchMembers = async () => {
             >
               İptal
             </button>
+
+            {task && (
+              <button
+                type="button"
+                onClick={handleManualArchive}
+                disabled={archiveLoading}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 text-emerald-300 hover:from-emerald-500/20 hover:to-emerald-700/20 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-500/20"
+              >
+                {archiveLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Arşivleniyor...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Manuel Arşivle
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -350,6 +393,7 @@ const fetchMembers = async () => {
               )}
             </button>
           </div>
+
         </form>
       </div>
     </div>

@@ -42,10 +42,15 @@ create index if not exists idx_archived_tasks_done_completed_at on archived_task
 
 -- 2) RLS
 alter table archived_tasks enable row level security;
+
+-- anon: (UI arşiv okuması için)
 create policy "Allow anon to read archived_tasks" on archived_tasks for select to anon using (true);
-create policy "Allow anon to insert archived_tasks" on archived_tasks for insert to anon with check (true);
-create policy "Allow anon to update archived_tasks" on archived_tasks for update to anon using (true) with check (true);
-create policy "Allow anon to delete archived_tasks" on archived_tasks for delete to anon using (true);
+
+-- authenticated: manuel arşivleme (insert/update/delete) için
+create policy "Allow authenticated to insert archived_tasks" on archived_tasks for insert to authenticated with check (true);
+create policy "Allow authenticated to update archived_tasks" on archived_tasks for update to authenticated using (true) with check (true);
+create policy "Allow authenticated to delete archived_tasks" on archived_tasks for delete to authenticated using (true);
+
 
 -- 3) Function that moves eligible tasks
 create or replace function archive_done_tasks_older_than_7_days()

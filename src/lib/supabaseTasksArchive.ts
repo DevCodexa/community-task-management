@@ -2,18 +2,15 @@ import { supabase } from './supabase';
 import { ArchivedTask } from '../types/taskArchive';
 import { TaskError } from '../types/task';
 
-const handleError = (error: any): TaskError => {
-  console.error('Supabase ArchivedTasks Error:', error);
-  return {
-    message: error?.message || 'Bilinmeyen hata oluştu',
-    code: error?.code,
-    details: error?.details,
-    hint: error?.hint,
-  };
-};
+const toTaskError = (error: any): TaskError => ({
+  message: error?.message || 'Bilinmeyen hata oluştu',
+  code: error?.code,
+  details: error?.details,
+  hint: error?.hint,
+});
 
 const throwError = (error: any): never => {
-  const taskError = handleError(error);
+  const taskError = toTaskError(error);
   throw new Error(taskError.message);
 };
 
@@ -26,28 +23,29 @@ export const getArchivedTasks = async (params?: {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  // tasks tablosuna göre archived_tasks schema farklı; join ile done_completed_by_name ve assignee members
-  // Supabase ilişkileri: archived_tasks.assignee_id -> members
-  // archived_tasks.done_completed_by -> members
-  // RLS allow anon; ama auth gerekiyorsa da fetch çalışır.
-
+  // NOTE: archived_tasks şemasında done_completed_by ve assignee_id kolonu members(id)'e FK.
+  // Bu yüzden join alan adları, foreign key ilişkilerinin Supabase tarafındaki embed isimlerine bağlıdır.
+  // Burada en yaygın embed adlarını (assignee / done_by) include ediyoruz.
+  // Eğer embed adları farklıysa UI alanları boş kalabilir; fakat ana task alanları yine gelir.
   let query = supabase
     .from('archived_tasks')
     .select(
-      `id, title, description, deadline, image_url, points, assignee_id, status, created_at, updated_at, 
-       done_completed_at, done_completed_by, archived_at, archived_reason,
-       assignee:assignee_id(name, avatar, comm_title),
-       done_by:done_completed_by(name, avatar, comm_title)`
-    ,
+      `
+      id, title, description, deadline, image_url, points, assignee_id, status,
+      created_at, updated_at,
+      done_completed_at, done_completed_by,
+      archived_at, archived_reason,
+      assignee:members(name, avatar, comm_title),
+      done_by:members(name, avatar, comm_title)
+      `,
       { count: 'exact' }
     )
     .order('archived_at', { ascending: false })
     .range(from, to);
 
   if (search?.trim()) {
-    query = query.or(
-      `title.ilike.%${search.trim()}%,description.ilike.%${search.trim()}%,assignee.name.ilike.%${search.trim()}%,done_by.name.ilike.%${search.trim()}%`
-    );
+    const s = search.trim();
+    query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
   }
 
   const { data, error, count } = await query;
@@ -78,6 +76,7 @@ export const getArchivedTasks = async (params?: {
       : null,
   }));
 
-  return { data: mapped, total: count || 0 };
+  return { data: mapped, total: count ?? 0 };
 };
+
 
