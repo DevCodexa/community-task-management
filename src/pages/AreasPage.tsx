@@ -297,9 +297,8 @@ export const AreasPage: React.FC = () => {
                     <th className="px-4 py-3 font-semibold">Alan Adı</th>
                     <th className="px-4 py-3 font-semibold">Açıklama</th>
                     <th className="px-4 py-3 font-semibold">Sözcü</th>
-
-                    <th className="px-4 py-3 font-semibold">Proje Sayısı</th>
                     <th className="px-4 py-3 font-semibold">Ekip Sayısı</th>
+                    <th className="px-4 py-3 font-semibold">Proje Sayısı</th>
                     <th className="px-4 py-3 font-semibold">İşlemler</th>
                   </tr>
                 </thead>
