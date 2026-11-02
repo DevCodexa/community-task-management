@@ -2,6 +2,14 @@
 
 A long-running Node.js worker for both email queues in the Task Manager database.
 
+## Runtime
+
+Use Node.js 24 LTS for local development and production. Both Docker build stages
+and the worker CI job use Node.js 24. Node.js 24 receives updates through April
+2028; review the [Node.js release schedule](https://nodejs.org/en/about/previous-releases)
+before its end of life. Rebuild and redeploy the worker image after changing the
+runtime; updating this file does not change an already running deployment.
+
 ## Queues
 
 - email_queue: welcome, task assignment, membership, and birthday messages. Uses BIGINT queue IDs and template_params.
@@ -36,4 +44,8 @@ npm ci
 npm test
 \`\`\`
 
-The current automated tests cover template rendering and parameter normalization. Provider delivery and queue retry behavior still require integration tests. Do not test by sending real email to community members; use a sandbox/test recipient and a controlled queue fixture.
+The automated tests cover template rendering, parameter normalization, and worker startup against a disabled local mock backend. The worker CI job also builds the Docker image. Provider delivery and queue retry behavior still require integration tests. Do not test by sending real email to community members; use a sandbox/test recipient and a controlled queue fixture.
+
+The worker's `src/types_db.ts` contains the relevant definitions generated from
+the Task Manager Supabase schema. Regenerate the types and update those
+definitions when the database schema changes.
