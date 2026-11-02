@@ -21,6 +21,12 @@ Provider settings (brevo_api_key, sender_email, sender_name, daily_limit, retry_
 
 The service must run as a persistent Node.js process because it uses node-cron. A serverless deployment that suspends the process will not run this in-process schedule reliably; use an always-on worker or a protected scheduled endpoint that invokes the processors.
 
+## Template safety
+
+For locally rendered HTML, template markup must come from a trusted template author. `{{name}}` values are plain text and are HTML-escaped; the subject remains plain text. Dynamic attributes, including links and image URLs, as well as placeholders in scripts, styles, comments, SVG and template elements are rejected. There is no trusted-HTML placeholder. Use fixed, trusted links in the template until context-aware URL support is added.
+
+Brevo-hosted templates (`brevo_template_id`) are rendered by Brevo, not this local renderer. Their parameter escaping and URL handling must be reviewed separately in Brevo before using untrusted values; the local checks do not establish their safety.
+
 ## Local checks
 
 From this directory:
