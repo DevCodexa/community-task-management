@@ -1,30 +1,55 @@
-import type { SpeakerEmailQueueItem } from './types';
+import { parseFragment, type DefaultTreeAdapterTypes } from 'parse5';
 
+const placeholder = /\{\{\s*([^}]+?)\s*\}\}/g;
+const rawTextElements = new Set(['script', 'style', 'textarea', 'title', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext', 'noscript']);
 
-function renderWithParams(template: string, params: Record<string, string>): string {
-  // Matches {{key}}
-  return template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_match: string, key: string) => {
-    const trimmedKey = String(key).trim();
-    return Object.prototype.hasOwnProperty.call(params, trimmedKey) ? params[trimmedKey] : '';
+function valueFor(params: Record<string, string>, key: string): string {
+  const name = key.trim();
+  return Object.prototype.hasOwnProperty.call(params, name) ? params[name] : '';
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]!);
+}
+
+// Only HTML text nodes are supported. Attribute/URL, CSS, script, comments and
+// foreign-content contexts need different rules, so they fail closed.
+export function renderTemplate(html: string, params: Record<string, string>): string {
+  const textRanges: Array<{ start: number; end: number }> = [];
+  const root = parseFragment(html, { sourceCodeLocationInfo: true });
+
+  function visit(node: DefaultTreeAdapterTypes.Node, safe: boolean): void {
+    if ('tagName' in node) {
+      safe = safe && node.namespaceURI === 'http://www.w3.org/1999/xhtml' && !rawTextElements.has(node.tagName);
+    }
+    if (node.nodeName === '#text' && safe && node.sourceCodeLocation) {
+      textRanges.push({ start: node.sourceCodeLocation.startOffset, end: node.sourceCodeLocation.endOffset });
+    }
+    if ('childNodes' in node) node.childNodes.forEach((child) => visit(child, safe));
+    // A template element's content is a separate document fragment; its
+    // placeholders are intentionally not supported.
+  }
+  visit(root, true);
+
+  return html.replace(placeholder, (match: string, key: string, offset: number) => {
+    if (!textRanges.some((range) => offset >= range.start && offset + match.length <= range.end)) {
+      throw new Error('Email template placeholders are only supported in HTML text');
+    }
+    return escapeHtml(valueFor(params, key));
   });
 }
 
-export function renderTemplate(html: string, params: Record<string, string>): string {
-  return renderWithParams(html, params);
-}
-
+// Subjects are plain text, not HTML: HTML escaping would show literal entities.
 export function renderSubject(subject: string, params: Record<string, string>): string {
-  return renderWithParams(subject, params);
+  return subject.replace(placeholder, (_match: string, key: string) => valueFor(params, key));
 }
 
 export function normalizeTemplateParams(params: Record<string, unknown>): Record<string, string> {
-
-
-  // Ensures Record<string,string> (Supabase jsonb may come as any/unknown)
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(params ?? {})) {
     out[k] = v == null ? '' : typeof v === 'string' ? v : String(v);
   }
   return out;
 }
-

@@ -314,10 +314,9 @@ export async function processEmailQueue(): Promise<void> {
     }
 
     const templateParams = buildTemplateParams(item);
-    const renderedSubject = renderSubject(template.subject, templateParams);
-    const renderedHtml = renderTemplate(template.html_content, templateParams);
-
     try {
+      const renderedSubject = renderSubject(template.subject, templateParams);
+      const renderedHtml = renderTemplate(template.html_content, templateParams);
       const payload = toBrevoPayload({
         settings,
         recipientEmail,
