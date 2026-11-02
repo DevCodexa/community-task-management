@@ -1,5 +1,5 @@
 # ---------- Build stage ----------
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Install deps first (better layer caching)
@@ -13,7 +13,7 @@ COPY . .
 RUN npm run build
 
 # ---------- Runtime stage ----------
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 
 ENV NODE_ENV=production
