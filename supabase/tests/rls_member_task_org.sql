@@ -119,6 +119,54 @@ VALUES
   ('d2000000-0000-4000-8000-000000000002', 'Admin-owned test task', 'd1000000-0000-4000-8000-000000000002', 'backlog')
 ON CONFLICT (id) DO NOTHING;
 
+
+-- The anon database role must be denied by table grants, not merely return
+-- an empty result set. Check reads and each write verb explicitly.
+SET LOCAL ROLE anon;
+SELECT set_config('request.jwt.claims', '{"role":"anon"}', true);
+DO $anonymous_session$
+BEGIN
+  BEGIN
+    PERFORM 1 FROM public.members;
+    RAISE EXCEPTION 'RLS TEST FAILED: anon read members';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.members (name, email, birth_day, birth_month)
+    VALUES ('Anonymous test', 'anonymous@example.invalid', 3, 3);
+    RAISE EXCEPTION 'RLS TEST FAILED: anon inserted a member';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  BEGIN
+    UPDATE public.members SET phone = 'anonymous-write'
+    WHERE id = 'd1000000-0000-4000-8000-000000000001';
+    RAISE EXCEPTION 'RLS TEST FAILED: anon updated a member';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  BEGIN
+    DELETE FROM public.members
+    WHERE id = 'd1000000-0000-4000-8000-000000000001';
+    RAISE EXCEPTION 'RLS TEST FAILED: anon deleted a member';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  BEGIN
+    PERFORM 1 FROM public.tasks;
+    RAISE EXCEPTION 'RLS TEST FAILED: anon read tasks';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+END;
+$anonymous_session$;
+RESET ROLE;
+
 -- Authenticated but not registered as a community member must see no private rows.
 SET LOCAL ROLE authenticated;
 SELECT set_config(
@@ -142,6 +190,36 @@ BEGIN
   SELECT count(*) INTO v_count FROM public.tasks;
   IF v_count <> 0 THEN
     RAISE EXCEPTION 'An unregistered identity can read tasks';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.org_departments;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'An unregistered identity can read org_departments';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.org_areas;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'An unregistered identity can read org_areas';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.org_area_members;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'An unregistered identity can read org_area_members';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.org_department_members;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'An unregistered identity can read org_department_members';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.org_projects;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'An unregistered identity can read org_projects';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.org_project_members;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'An unregistered identity can read org_project_members';
   END IF;
 END;
 $unregistered_session$;
