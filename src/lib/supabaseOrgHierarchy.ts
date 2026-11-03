@@ -39,7 +39,7 @@ export interface OrgDepartment {
   id: string;
   name: string;
   description: string | null;
-  responsible_person_id: string;
+  responsible_person_id: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -76,7 +76,7 @@ export interface OrgArea {
   department_id: string;
   name: string;
   description: string | null;
-  area_leader_id: string;
+  area_leader_id: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
