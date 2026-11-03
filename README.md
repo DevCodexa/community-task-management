@@ -579,6 +579,24 @@ cd community-task-management
 npm install
 ```
 
+Create a local environment file from the example and fill in your own Supabase project values.
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+macOS/Linux:
+
+```bash
+cp .env.example .env.local
+```
+
+Required values are `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The app now stops with a clear configuration error if either is missing; it never falls back to the production project. Use only a browser-safe publishable/anon key in a `VITE_` variable. **Never put a Supabase service-role or secret key in frontend environment variables.**
+
+Configure the variables explicitly for each Vercel environment as well. Use a separate Supabase project for previews if they need isolated data; do not copy production values into Preview unless production data access is intentional.
+
 ## Start Development Server
 
 ```bash
