@@ -49,11 +49,8 @@ create index if not exists idx_tasks_title on tasks(title);
 
 alter table tasks enable row level security;
 
--- Development mode: Allow anon role for all CRUD operations
-create policy "Allow anon to read tasks" on tasks for select to anon using (true);
-create policy "Allow anon to insert tasks" on tasks for insert to anon with check (true);
-create policy "Allow anon to update tasks" on tasks for update to anon using (true) with check (true);
-create policy "Allow anon to delete tasks" on tasks for delete to anon using (true);
+-- Security: do not add anon policies here. Access is centralized in the
+-- versioned Supabase migrations; without those policies RLS fails closed.
 
 -- -----------------------------------------------------------
 -- 5. TRIGGERS
