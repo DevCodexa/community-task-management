@@ -1,208 +1,95 @@
--- RLS FIX for org_departments (and related tables) so authenticated users can create rows.
--- Run in Supabase SQL Editor
+-- Secure re-application of organization-table RLS policies.
+--
+-- Requires the versioned security migrations to have been applied first:
+-- current_member_id() and current_member_role() must exist.
+--
+-- This intentionally replaces every existing policy on the listed organization
+-- tables. Older versions of this file granted all authenticated users write
+-- access, which is too permissive. Registered members may read the single
+-- community directory; only Admin and Super Admin may change its structure.
 
--- ----------------------------
--- org_departments
--- ----------------------------
-ALTER TABLE org_departments ENABLE ROW LEVEL SECURITY;
+BEGIN;
 
-DO $$
+DO $drop_legacy_policies$
+DECLARE
+  p record;
 BEGIN
-  -- INSERT
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
+  FOR p IN
+    SELECT schemaname, tablename, policyname
+    FROM pg_policies
     WHERE schemaname = 'public'
-      AND tablename = 'org_departments'
-      AND policyname = 'Authenticated users can insert org_departments'
-  ) THEN
-    CREATE POLICY "Authenticated users can insert org_departments"
-      ON org_departments
-      FOR INSERT TO authenticated
-      WITH CHECK (true);
-  END IF;
+      AND tablename = ANY (ARRAY[
+        'org_departments',
+        'org_areas',
+        'org_area_members',
+        'org_department_members',
+        'org_projects',
+        'org_project_members'
+      ])
+  LOOP
+    EXECUTE format(
+      'DROP POLICY %I ON %I.%I',
+      p.policyname,
+      p.schemaname,
+      p.tablename
+    );
+  END LOOP;
+END;
+$drop_legacy_policies$;
 
-  -- SELECT
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_departments'
-      AND policyname = 'Authenticated users can read org_departments'
-  ) THEN
-    CREATE POLICY "Authenticated users can read org_departments"
-      ON org_departments
-      FOR SELECT TO authenticated
-      USING (true);
-  END IF;
+ALTER TABLE public.org_departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.org_areas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.org_area_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.org_department_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.org_projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.org_project_members ENABLE ROW LEVEL SECURITY;
 
-  -- UPDATE
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_departments'
-      AND policyname = 'Authenticated users can update org_departments'
-  ) THEN
-    CREATE POLICY "Authenticated users can update org_departments"
-      ON org_departments
-      FOR UPDATE TO authenticated
-      USING (true)
-      WITH CHECK (true);
-  END IF;
+CREATE POLICY org_departments_read_authenticated
+  ON public.org_departments FOR SELECT TO authenticated
+  USING (public.current_member_id() IS NOT NULL);
+CREATE POLICY org_departments_admin_all
+  ON public.org_departments FOR ALL TO authenticated
+  USING (public.current_member_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.current_member_role() IN ('Super Admin', 'Admin'));
 
-  -- DELETE
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_departments'
-      AND policyname = 'Authenticated users can delete org_departments'
-  ) THEN
-    CREATE POLICY "Authenticated users can delete org_departments"
-      ON org_departments
-      FOR DELETE TO authenticated
-      USING (true);
-  END IF;
-END $$;
+CREATE POLICY org_areas_read_authenticated
+  ON public.org_areas FOR SELECT TO authenticated
+  USING (public.current_member_id() IS NOT NULL);
+CREATE POLICY org_areas_admin_all
+  ON public.org_areas FOR ALL TO authenticated
+  USING (public.current_member_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.current_member_role() IN ('Super Admin', 'Admin'));
 
--- ----------------------------
--- org_areas
--- ----------------------------
-ALTER TABLE org_areas ENABLE ROW LEVEL SECURITY;
+CREATE POLICY org_area_members_read_authenticated
+  ON public.org_area_members FOR SELECT TO authenticated
+  USING (public.current_member_id() IS NOT NULL);
+CREATE POLICY org_area_members_admin_all
+  ON public.org_area_members FOR ALL TO authenticated
+  USING (public.current_member_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.current_member_role() IN ('Super Admin', 'Admin'));
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_areas'
-      AND policyname = 'Authenticated users can read org_areas'
-  ) THEN
-    CREATE POLICY "Authenticated users can read org_areas"
-      ON org_areas FOR SELECT TO authenticated USING (true);
-  END IF;
+CREATE POLICY org_department_members_read_authenticated
+  ON public.org_department_members FOR SELECT TO authenticated
+  USING (public.current_member_id() IS NOT NULL);
+CREATE POLICY org_department_members_admin_all
+  ON public.org_department_members FOR ALL TO authenticated
+  USING (public.current_member_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.current_member_role() IN ('Super Admin', 'Admin'));
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_areas'
-      AND policyname = 'Authenticated users can insert org_areas'
-  ) THEN
-    CREATE POLICY "Authenticated users can insert org_areas"
-      ON org_areas FOR INSERT TO authenticated WITH CHECK (true);
-  END IF;
+CREATE POLICY org_projects_read_authenticated
+  ON public.org_projects FOR SELECT TO authenticated
+  USING (public.current_member_id() IS NOT NULL);
+CREATE POLICY org_projects_admin_all
+  ON public.org_projects FOR ALL TO authenticated
+  USING (public.current_member_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.current_member_role() IN ('Super Admin', 'Admin'));
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_areas'
-      AND policyname = 'Authenticated users can update org_areas'
-  ) THEN
-    CREATE POLICY "Authenticated users can update org_areas"
-      ON org_areas FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-  END IF;
+CREATE POLICY org_project_members_read_authenticated
+  ON public.org_project_members FOR SELECT TO authenticated
+  USING (public.current_member_id() IS NOT NULL);
+CREATE POLICY org_project_members_admin_all
+  ON public.org_project_members FOR ALL TO authenticated
+  USING (public.current_member_role() IN ('Super Admin', 'Admin'))
+  WITH CHECK (public.current_member_role() IN ('Super Admin', 'Admin'));
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_areas'
-      AND policyname = 'Authenticated users can delete org_areas'
-  ) THEN
-    CREATE POLICY "Authenticated users can delete org_areas"
-      ON org_areas FOR DELETE TO authenticated USING (true);
-  END IF;
-END $$;
-
--- ----------------------------
--- org_area_members
--- ----------------------------
-ALTER TABLE org_area_members ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_area_members'
-      AND policyname = 'Authenticated users can read org_area_members'
-  ) THEN
-    CREATE POLICY "Authenticated users can read org_area_members"
-      ON org_area_members FOR SELECT TO authenticated USING (true);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_area_members'
-      AND policyname = 'Authenticated users can insert org_area_members'
-  ) THEN
-    CREATE POLICY "Authenticated users can insert org_area_members"
-      ON org_area_members FOR INSERT TO authenticated WITH CHECK (true);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_area_members'
-      AND policyname = 'Authenticated users can update org_area_members'
-  ) THEN
-    CREATE POLICY "Authenticated users can update org_area_members"
-      ON org_area_members FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_area_members'
-      AND policyname = 'Authenticated users can delete org_area_members'
-  ) THEN
-    CREATE POLICY "Authenticated users can delete org_area_members"
-      ON org_area_members FOR DELETE TO authenticated USING (true);
-  END IF;
-END $$;
-
--- ----------------------------
--- org_projects
--- ----------------------------
-ALTER TABLE org_projects ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_projects'
-      AND policyname = 'Authenticated users can read org_projects'
-  ) THEN
-    CREATE POLICY "Authenticated users can read org_projects"
-      ON org_projects FOR SELECT TO authenticated USING (true);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_projects'
-      AND policyname = 'Authenticated users can insert org_projects'
-  ) THEN
-    CREATE POLICY "Authenticated users can insert org_projects"
-      ON org_projects FOR INSERT TO authenticated WITH CHECK (true);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_projects'
-      AND policyname = 'Authenticated users can update org_projects'
-  ) THEN
-    CREATE POLICY "Authenticated users can update org_projects"
-      ON org_projects FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public'
-      AND tablename = 'org_projects'
-      AND policyname = 'Authenticated users can delete org_projects'
-  ) THEN
-    CREATE POLICY "Authenticated users can delete org_projects"
-      ON org_projects FOR DELETE TO authenticated USING (true);
-  END IF;
-END $$;
-
+COMMIT;
