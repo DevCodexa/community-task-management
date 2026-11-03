@@ -9,6 +9,7 @@ import { NavbarBell } from './NavbarBell';
 import { NotificationDropdown } from './NotificationDropdown';
 import { NotificationDetailModal } from './NotificationDetailModal';
 import { FullNotification } from '../../types/notification';
+import { useUserProfile } from '../../context/UserProfileContext';
 
 /**
  * NotificationContainer
@@ -20,6 +21,7 @@ import { FullNotification } from '../../types/notification';
  */
 export const NotificationContainer: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useUserProfile();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<FullNotification | null>(null);
   
@@ -33,7 +35,7 @@ export const NotificationContainer: React.FC = () => {
     removeNotification,
   } = useNotifications({
     enableRealtime: true,
-    checkBirthdays: true,
+    user_id: profile?.id || undefined,
   });
 
   // Handle notification click - open detail modal

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-
+    "test:notifications": "node --test tests/notification-state.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
