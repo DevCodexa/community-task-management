@@ -35,6 +35,41 @@ For locally rendered HTML, template markup must come from a trusted template aut
 
 Brevo-hosted templates (`brevo_template_id`) are rendered by Brevo, not this local renderer. Their parameter escaping and URL handling must be reviewed separately in Brevo before using untrusted values; the local checks do not establish their safety.
 
+## Delivery claims and recovery
+
+The worker claims a pending row atomically before calling Brevo. It includes the
+claim UUID as Brevo's idempotency key, marks confirmed sends as sent, and treats
+logging as best effort. It never automatically releases a claim: a timeout,
+provider error, process crash, or failed queue update can have an unknown outcome.
+This intentionally trades automatic retry for duplicate protection. Template
+configuration errors detected before claiming still use the bounded retry policy.
+Brevo's idempotency window is finite and is not a permanent exactly-once guarantee.
+
+Inspect unresolved claims with a privileged, read-only database session:
+
+```sql
+SELECT 'general' AS queue, id::text, delivery_claimed_at
+FROM public.email_queue WHERE status = 'pending' AND delivery_claim_token IS NOT NULL
+UNION ALL
+SELECT 'speaker' AS queue, id::text, delivery_claimed_at
+FROM public.speaker_email_queue WHERE status = 'pending' AND delivery_claim_token IS NOT NULL;
+```
+
+An operator must compare each result with the worker's logs and Brevo delivery
+records before deciding whether it was accepted and how to reconcile it. Do not
+automatically reset or delete claimed rows: doing so can duplicate delivery.
+Successful general-queue sends that could not be marked sent include the provider
+message ID in worker logs; speaker sends also log the ID on a queue update failure.
+
+**Deployment prerequisite:** apply the accompanying migration before starting this
+version. Before enabling this worker, stop or update **every** other consumer and
+manual-send route that uses these tables so they honor the same claim protocol.
+In particular, OrionTeamMailWorker currently ignores these claims. The migration
+prevents the birthday-date cancellation trigger from cancelling claimed jobs;
+other queue mutation paths must also be reviewed. Until the other consumers are
+updated or disabled, this change does not guarantee cross-service duplicate prevention.
+Do not enable simultaneous old and new worker versions against the same queues.
+
 ## Local checks
 
 From this directory:

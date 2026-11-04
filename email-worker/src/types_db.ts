@@ -7,6 +7,8 @@ export type Database = {
     Tables: {
       email_queue: {
         Row: {
+          delivery_claim_token: string | null
+          delivery_claimed_at: string | null
           attempt_count: number
           brevo_message_id: string | null
           cc_emails: Json | null
@@ -26,6 +28,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          delivery_claim_token?: string | null
+          delivery_claimed_at?: string | null
           attempt_count?: number
           brevo_message_id?: string | null
           cc_emails?: Json | null
@@ -45,6 +49,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          delivery_claim_token?: string | null
+          delivery_claimed_at?: string | null
           attempt_count?: number
           brevo_message_id?: string | null
           cc_emails?: Json | null
@@ -177,6 +183,8 @@ export type Database = {
       }
       speaker_email_queue: {
         Row: {
+          delivery_claim_token: string | null
+          delivery_claimed_at: string | null
           created_at: string
           email_type: string
           error_message: string | null
@@ -188,6 +196,8 @@ export type Database = {
           status: string
         }
         Insert: {
+          delivery_claim_token?: string | null
+          delivery_claimed_at?: string | null
           created_at?: string
           email_type?: string
           error_message?: string | null
@@ -199,6 +209,8 @@ export type Database = {
           status?: string
         }
         Update: {
+          delivery_claim_token?: string | null
+          delivery_claimed_at?: string | null
           created_at?: string
           email_type?: string
           error_message?: string | null

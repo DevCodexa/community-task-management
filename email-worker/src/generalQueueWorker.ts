@@ -3,6 +3,7 @@ import { loadEmailSettings } from './settingsLoader';
 import { getSupabaseClient } from './supabaseClient';
 import { normalizeTemplateParams, renderSubject, renderTemplate } from './templateEngine';
 import { sendEmail } from './brevo';
+import { claimDelivery } from './deliveryClaim';
 
 type GeneralQueueItem = {
   id: number;
@@ -40,9 +41,12 @@ async function insertLog(item: GeneralQueueItem, eventType: 'sent' | 'failed', e
   if (error) throw new Error(error.message);
 }
 
-async function updateQueue(id: number, values: Record<string, unknown>): Promise<void> {
-  const { error } = await getSupabaseClient().from('email_queue').update(values as never).eq('id', id);
+async function updateQueue(id: number, values: Record<string, unknown>, claimToken?: string): Promise<void> {
+  let query = getSupabaseClient().from('email_queue').update(values as never).eq('id', id).eq('status', 'pending');
+  query = claimToken ? query.eq('delivery_claim_token', claimToken) : query.is('delivery_claim_token', null);
+  const { data, error } = await query.select('id').maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error(`Queue item ${id} is no longer owned by this worker`);
 }
 
 function missingTemplateParams(source: string, params: Record<string, string>): string[] {
@@ -111,6 +115,7 @@ async function fetchPending(settings: EmailSettings, limit: number): Promise<Gen
     .from('email_queue')
     .select('id, recipient_email, recipient_name, template_code, template_params, attempt_count')
     .eq('status', 'pending')
+    .is('delivery_claim_token', null)
     .lte('next_attempt_at', new Date().toISOString())
     .lt('attempt_count', settings.retry_limit)
     .order('priority', { ascending: false })
@@ -201,11 +206,9 @@ export async function processGeneralEmailQueue(): Promise<void> {
       continue;
     }
 
-    let messageId: string;
+    let payload: BrevoSendPayload;
     try {
-      const payload = buildPayload(settings, item, template, params);
-      const response = await sendEmail(payload, settings.brevo_api_key);
-      messageId = response.messageId;
+      payload = buildPayload(settings, item, template, params);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const statusCode = error && typeof error === 'object' && 'status' in error ? Number((error as {status?: unknown}).status) : undefined;
@@ -224,16 +227,34 @@ export async function processGeneralEmailQueue(): Promise<void> {
       continue;
     }
 
+    const claimToken = await claimDelivery('email_queue', item.id);
+    if (!claimToken) continue;
+    payload.headers = { ...payload.headers, idempotencyKey: claimToken };
+    let messageId: string;
+    try {
+      messageId = (await sendEmail(payload, settings.brevo_api_key)).messageId;
+    } catch (error) {
+      // A timeout or error response does not prove the provider did not accept
+      // the message. Never release this claim automatically.
+      log('DELIVERY OUTCOME UNKNOWN for queue #' + item.id + '; manual reconciliation required: ' + String(error));
+      continue;
+    }
+
     // Delivery succeeded. Mark the queue row sent before best-effort logging, so log failures
     // never enter the send-failure/retry branch and do not intentionally requeue this email.
-    await updateQueue(item.id, {
-      status: 'sent',
-      attempt_count: attempt,
-      last_attempt_at: new Date().toISOString(),
-      sent_at: new Date().toISOString(),
-      brevo_message_id: messageId,
-      error_message: null
-    });
+    try {
+      await updateQueue(item.id, {
+        status: 'sent',
+        attempt_count: attempt,
+        last_attempt_at: new Date().toISOString(),
+        sent_at: new Date().toISOString(),
+        brevo_message_id: messageId,
+        error_message: null
+      }, claimToken);
+    } catch (error) {
+      log('DELIVERY SUCCEEDED but queue update failed for queue #' + item.id + ' (messageId=' + messageId + '); manual reconciliation required: ' + String(error));
+      continue;
+    }
 
     const birthdayPersonId = typeof params.birthday_person_id === 'string' ? params.birthday_person_id : '';
     const birthdayYear = Number(params.birthday_year);

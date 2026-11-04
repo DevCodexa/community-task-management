@@ -44,6 +44,7 @@ export interface BrevoSendPayload {
   htmlContent: string;
   templateId?: number;
   params?: Record<string, string>;
+  headers?: Record<string, string>;
 }
 
 export interface BrevoSendResponse {
