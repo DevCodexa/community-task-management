@@ -3,6 +3,7 @@ import { loadEmailSettings } from './settingsLoader';
 import { getSupabaseClient } from './supabaseClient';
 import { renderTemplate, renderSubject } from './templateEngine';
 import { sendEmail } from './brevo';
+import { claimDelivery } from './deliveryClaim';
 
 function formatTimestamp(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -71,6 +72,7 @@ async function fetchPendingBatch(
       ].join(',')
     )
     .eq('status', 'pending')
+    .is('delivery_claim_token', null)
     .lte('scheduled_at', new Date().toISOString())
     .lt('retry_count', retryLimit)
     .order('created_at', { ascending: true })
@@ -155,26 +157,25 @@ async function insertSendLog(params: {
 async function markQueueRowSuccess(params: {
   supabase: ReturnType<typeof getSupabaseClient>;
   queueId: string;
-  brevoMessageId: string;
+  claimToken: string;
 }): Promise<void> {
   const nowIso = new Date().toISOString();
 
-  const { error } = await (params.supabase as unknown as {
-    from: (_table: string) => {
-      update: (_values: Record<string, unknown>) => {
-        eq: (_col: string, _value: string) => Promise<{ error: { message: string } | null }>;
-      };
-    };
-  })
+  const { data, error } = await params.supabase
     .from('speaker_email_queue')
     .update({
       status: 'sent',
       sent_at: nowIso,
       error_message: null
     })
-    .eq('id', params.queueId);
+    .eq('id', params.queueId)
+    .eq('status', 'pending')
+    .eq('delivery_claim_token', params.claimToken)
+    .select('id')
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error('Queue item is no longer owned by this worker');
 }
 
 async function markQueueRowFailure(params: {
@@ -184,19 +185,12 @@ async function markQueueRowFailure(params: {
   errorMessage: string;
   status: 'pending' | 'failed';
 }): Promise<void> {
-  const nowIso = new Date().toISOString();
   const scheduledAt =
     params.status === 'pending'
       ? new Date(Date.now() + 5 * 60 * 1000).toISOString()
       : undefined;
 
-  const { error } = await (params.supabase as unknown as {
-    from: (_table: string) => {
-      update: (_values: Record<string, unknown>) => {
-        eq: (_col: string, _value: string) => Promise<{ error: { message: string } | null }>;
-      };
-    };
-  })
+  const { data, error } = await params.supabase
     .from('speaker_email_queue')
     .update({
       status: params.status,
@@ -206,10 +200,15 @@ async function markQueueRowFailure(params: {
       scheduled_at: scheduledAt,
       sent_at: params.status === 'failed' ? null : undefined,
       last_attempt_at: undefined
-    } as Record<string, unknown>)
-    .eq('id', params.queueId);
+    } as never)
+    .eq('id', params.queueId)
+    .eq('status', 'pending')
+    .is('delivery_claim_token', null)
+    .select('id')
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error('Queue item is no longer available');
 }
 
 function toBrevoPayload(params: {
@@ -298,7 +297,6 @@ export async function processEmailQueue(): Promise<void> {
         errorMessage,
         status
       });
-
       await insertSendLog({
         supabase,
         queueId: item.id,
@@ -314,10 +312,11 @@ export async function processEmailQueue(): Promise<void> {
     }
 
     const templateParams = buildTemplateParams(item);
+    let payload: BrevoSendPayload;
     try {
       const renderedSubject = renderSubject(template.subject, templateParams);
       const renderedHtml = renderTemplate(template.html_content, templateParams);
-      const payload = toBrevoPayload({
+      payload = toBrevoPayload({
         settings,
         recipientEmail,
         recipientName: item.full_name,
@@ -327,24 +326,6 @@ export async function processEmailQueue(): Promise<void> {
         templateParams
       });
 
-      const response = await sendEmail(payload, settings.brevo_api_key);
-
-      await markQueueRowSuccess({
-        supabase,
-        queueId: item.id,
-        brevoMessageId: response.messageId
-      });
-
-      await insertSendLog({
-        supabase,
-        queueId: item.id,
-        recipientEmail,
-        templateCode,
-        eventType: 'sent',
-        eventData: { attempt: nextAttemptCount, messageId: response.messageId }
-      });
-
-      sentCount += 1;
     } catch (e: unknown) {
       const httpStatus = getHttpStatusFromError(e);
       const errorMessage = e instanceof Error ? e.message : String(e);
@@ -379,6 +360,33 @@ export async function processEmailQueue(): Promise<void> {
 
       if (status === 'failed') failedCount += 1;
       else skippedCount += 1;
+      continue;
+    }
+
+    const claimToken = await claimDelivery('speaker_email_queue', item.id);
+    if (!claimToken) continue;
+    payload.headers = { ...payload.headers, idempotencyKey: claimToken };
+    let messageId: string;
+    try {
+      messageId = (await sendEmail(payload, settings.brevo_api_key)).messageId;
+    } catch (error) {
+      log(`DELIVERY OUTCOME UNKNOWN for speaker queue #${item.id}; manual reconciliation required: ${String(error)}`);
+      continue;
+    }
+    try {
+      await markQueueRowSuccess({ supabase, queueId: item.id, claimToken });
+    } catch (error) {
+      log(`DELIVERY SUCCEEDED but queue update failed for speaker queue #${item.id} (messageId=${messageId}); manual reconciliation required: ${String(error)}`);
+      continue;
+    }
+    sentCount += 1;
+    try {
+      await insertSendLog({
+        supabase, queueId: item.id, recipientEmail, templateCode, eventType: 'sent',
+        eventData: { attempt: nextAttemptCount, messageId }
+      });
+    } catch (error) {
+      log(`DELIVERY SUCCEEDED but log insert failed for speaker queue #${item.id}: ${String(error)}`);
     }
   }
 
