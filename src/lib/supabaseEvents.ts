@@ -259,20 +259,11 @@ export const updateEvent = async (id: string, updateData: EventUpdateData): Prom
 };
 
 export const deleteEvent = async (id: string): Promise<void> => {
-  const event = await getEventById(id);
-  if (!event) throw new Error('Etkinlik bulunamadı');
-
-  // Önce görevlileri sil (cascade olacak ama explicit yapalım)
-  const { error: staffError } = await supabase
-    .from('event_staff')
-    .delete()
-    .eq('event_id', id);
-  
-  if (staffError) throwError(staffError);
-
-  // Sonra etkinliği sil
-  const { error } = await supabase.from('events').delete().eq('id', id);
+  // Event staff and speaker assignments are deleted by their foreign keys,
+  // in the same database transaction as the event.
+  const { data, error } = await supabase.from('events').delete().eq('id', id).select('id').maybeSingle();
   if (error) throwError(error);
+  if (!data) throw new Error('Etkinlik silinemedi veya bulunamadı.');
 };
 
 // -----------------------------------------------------------

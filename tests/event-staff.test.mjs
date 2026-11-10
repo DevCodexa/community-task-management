@@ -13,9 +13,10 @@ function setup(responses) {
       const call = { table, filters: [], operation: 'select' };
       calls.push(call);
       const query = {
-        select() { return query; },
+        select(columns) { call.selected = columns; return query; },
         eq(column, value) { call.filters.push([column, value]); return query; },
         insert(values) { call.operation = 'insert'; call.values = values; return query; },
+        delete() { call.operation = 'delete'; return query; },
         single() { return Promise.resolve(responses.shift()); },
         maybeSingle() { return Promise.resolve(responses.shift()); },
       };
@@ -67,4 +68,27 @@ test('a failed duplicate check does not attempt an insert', async () => {
 test('a failed insert is reported to the caller', async () => {
   const { service } = setup([success({ id: 'event-1' }), success({ id: 'member-1' }), success(null), { data: null, error: { message: 'Kayıt başarısız' } }]);
   await assert.rejects(service.addStaffToEvent('event-1', 'member-1'), /Kayıt başarısız/);
+});
+
+test('deleting an event uses a single confirmed database operation', async () => {
+  const { service, calls } = setup([success({ id: 'event-1' })]);
+  await service.deleteEvent('event-1');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].table, 'events');
+  assert.equal(calls[0].operation, 'delete');
+  assert.equal(calls[0].selected, 'id');
+  assert.equal(JSON.stringify(calls[0].filters), JSON.stringify([['id', 'event-1']]));
+});
+
+test('a missing or inaccessible event is not reported as deleted', async () => {
+  const { service, calls } = setup([success(null)]);
+  await assert.rejects(service.deleteEvent('event-1'), /silinemedi veya bulunamadı/);
+  assert.equal(calls.length, 1);
+});
+
+test('a failed event delete reports the error without a separate staff deletion', async () => {
+  const { service, calls } = setup([{ data: null, error: { message: 'Erişim reddedildi' } }]);
+  await assert.rejects(service.deleteEvent('event-1'), /Erişim reddedildi/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].table, 'events');
 });
