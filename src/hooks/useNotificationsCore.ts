@@ -170,7 +170,7 @@ export const useNotificationsCore = (
         setNotifications((prev) =>
           prev.map((n) => n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n)
         );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+        await refreshUnreadCount();
       } catch (err: any) {
         setError(err.message || 'Bildirim okundu işaretlenirken hata oluştu');
         console.error('Mark as read error:', err);
@@ -178,7 +178,7 @@ export const useNotificationsCore = (
         pendingReadIds.current.delete(id);
       }
     },
-    [notifications, user_id, service]
+    [notifications, user_id, service, refreshUnreadCount]
   );
 
   // ===========================================================
@@ -195,13 +195,13 @@ export const useNotificationsCore = (
         prev.map((n) => ({ ...n, is_read: true }))
       );
 
-      // Reset unread count
-      setUnreadCount(0);
+      // A realtime insert may have arrived while the mutation was pending.
+      await refreshUnreadCount();
     } catch (err: any) {
       setError(err.message || 'Bildirimler okundu işaretlenirken hata oluştu');
       console.error('Mark all as read error:', err);
     }
-  }, [user_id, service]);
+  }, [user_id, service, refreshUnreadCount]);
 
   // ===========================================================
   // REMOVE NOTIFICATION
@@ -210,22 +210,17 @@ export const useNotificationsCore = (
   const removeNotification = useCallback(async (id: string) => {
     if (!user_id) return;
     try {
-      const notification = notifications.find((n) => n.id === id);
-
       await service.deleteNotification(id);
 
       // Update local state
       setNotifications((prev) => prev.filter((n) => n.id !== id));
 
-      // Decrease unread count if was unread
-      if (notification && !notification.is_read) {
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
+      await refreshUnreadCount();
     } catch (err: any) {
       setError(err.message || 'Bildirim silinirken hata oluştu');
       console.error('Remove notification error:', err);
     }
-  }, [notifications, user_id, service]);
+  }, [user_id, service, refreshUnreadCount]);
 
   // The full notification page and the bell are mounted independently.
   // Reconcile mutations made on that page without broadcasting another user's data.

@@ -148,3 +148,44 @@ test('the actual bell hook deduplicates a realtime insert overlapping its initia
   assert.deepEqual(view.root.findByProps({ 'data-testid': 'feed' }).children, ['realtime-overlap']);
   view.unmount();
 });
+
+for (const operation of ['read', 'delete'] as const) {
+  test(`a delayed bell ${operation} response does not double-count a page deletion`, async () => {
+    const rows = [notification('a'), notification('b'), notification('c')];
+    const pending = deferred<void>();
+    const pageService = serviceFor(rows);
+    const feedService: NotificationFeedService = {
+      ...pageService,
+      getNotifications: async (params) => {
+        const result = await pageService.getNotifications(params);
+        return { ...result, data: result.data.map((row) => ({ ...row })) };
+      },
+      getUnreadCount: async () => rows.filter((row) => !row.is_read).length,
+      markAsRead: async (id) => {
+        const row = rows.find((item) => item.id === id)!;
+        row.is_read = true;
+        await pending.promise;
+        return row;
+      },
+      deleteNotification: async (id) => {
+        rows.splice(rows.findIndex((row) => row.id === id), 1);
+        await pending.promise;
+      },
+      subscribeToNotifications: () => () => {},
+    };
+    function Bell() {
+      const bell = useNotificationsCore({ user_id: 'member-a' }, feedService);
+      return <><output data-testid="count">{bell.unreadCount}</output>
+        <button data-testid="bell-action" onClick={() => void (operation === 'read' ? bell.markAsRead('a') : bell.removeNotification('a'))}>Bell action</button></>;
+    }
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<><Bell /><NotificationCenter userId="member-a" service={pageService} confirmClear={() => true} /></>); });
+    await act(async () => { view.root.findByProps({ 'data-testid': 'bell-action' }).props.onClick(); });
+    const secondRow = view.root.findAllByType('li').find((row) => row.findAllByType('span').some((span) => span.children.includes('b')))!;
+    await act(async () => { secondRow.findByProps({ 'aria-label': 'Bildirimi sil' }).props.onClick(); });
+    assert.deepEqual(view.root.findByProps({ 'data-testid': 'count' }).children, ['1']);
+    await act(async () => { pending.resolve(); await pending.promise; });
+    assert.deepEqual(view.root.findByProps({ 'data-testid': 'count' }).children, ['1']);
+    await act(async () => { view.unmount(); });
+  });
+}
