@@ -547,7 +547,7 @@ Logical database areas include:
 * Email templates
 * Email queues
 
-Some SQL files in the repository are corrective, reset, or historical variants. A future cleanup can consolidate these into a clearer migration strategy.
+Some SQL files are corrective, destructive reset scripts, or historical variants. They are not an ordered bootstrap. See the [setup and operations guide](docs/OPERATIONS.md) before applying any database script.
 
 ---
 
@@ -567,16 +567,16 @@ For production usage, application authentication and database-level Row Level Se
 
 ## Requirements
 
-* Node.js
+* Node.js 20 or newer for the frontend (CI uses 20; the optional worker uses 24)
 * npm
 * Supabase project
 
 ## Installation
 
 ```bash
-git clone https://github.com/DevCodexa/community-task-management.git
+git clone https://github.com/codelovingcat/community-task-management.git
 cd community-task-management
-npm install
+npm ci
 ```
 
 Create a local environment file from the example and fill in your own Supabase project values.
@@ -633,9 +633,12 @@ VITE_SUPABASE_ANON_KEY=
 VITE_APP_URL=
 ```
 
-Additional email-related configuration depends on the deployed email infrastructure.
+`VITE_APP_URL` is currently reserved in the example file; the frontend does not read it. Additional email-related configuration depends on the deployed email infrastructure.
 
 Secrets and service credentials should be provided through environment variables or secure secret storage rather than committed to source control.
+
+For environment isolation, deployment checks, migration precautions, recovery and
+troubleshooting, see the [setup and operations guide](docs/OPERATIONS.md).
 
 ---
 
