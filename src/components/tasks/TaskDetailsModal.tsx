@@ -23,7 +23,7 @@ interface TaskDetailsModalProps {
 const STATUS_LABELS: Record<TaskStatus, string> = {
   backlog: 'Beklemede',
   started: 'Başlandı',
-  in__progress: 'Devam Ediyor',
+  in_progress: 'Devam Ediyor',
   completed: 'Tamamlandı',
   done: 'Bitti',
 };
