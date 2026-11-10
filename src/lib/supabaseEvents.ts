@@ -297,13 +297,14 @@ export const addStaffToEvent = async (eventId: string, memberId: string): Promis
   if (memberError || !member) throw new Error('Üye bulunamadı');
 
   // Zaten görevli mi kontrol et
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('event_staff')
     .select('id')
     .eq('event_id', eventId)
     .eq('member_id', memberId)
-    .single();
-  
+    .maybeSingle();
+
+  if (existingError) throwError(existingError);
   if (existing) throw new Error('Bu üye zaten etkinlikte görevli');
 
   const { data, error } = await supabase
@@ -314,10 +315,7 @@ export const addStaffToEvent = async (eventId: string, memberId: string): Promis
 
   if (error) throwError(error);
 
-  // Send email notification to staff member (fire-and-forget - don't await)
-  sendEventStaffEmailNotification(eventId, memberId).catch(err => {
-    console.warn('Email notification failed:', err);
-  });
+  // The database's event_staff INSERT trigger enqueues the email when configured.
 
   return data;
 };
