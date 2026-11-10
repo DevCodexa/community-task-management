@@ -20,6 +20,7 @@ jobs:
       - run: npm run test:notifications
       - run: npm run build
       - run: node --test tests/supabase-config.test.mjs
+      - run: node --test tests/event-staff.test.mjs
 
   email-worker:
     name: Email worker tests and TypeScript build
