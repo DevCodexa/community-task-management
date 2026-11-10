@@ -249,13 +249,18 @@ export const markNotificationsAsReadByType = async (
  * Bildirim sil
  */
 export const deleteNotification = async (id: string): Promise<void> => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('notifications')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     throwError(error);
+  }
+  if (!data) {
+    throw new Error('Bildirim silinemedi veya zaten silinmiş.');
   }
 };
 

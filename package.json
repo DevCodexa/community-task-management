@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test:notifications": "node --test tests/notification-state.test.mjs",
+    "test:notifications": "node --import tsx --test tests/notification-state.test.mjs tests/notification-center.test.tsx",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -25,7 +25,9 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
+    "react-test-renderer": "18.3.1",
     "tailwindcss": "^3.4.0",
+    "tsx": "4.22.3",
     "typescript": "^5.2.2",
     "vite": "^5.4.0"
   }
