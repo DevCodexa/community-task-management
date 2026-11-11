@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { FullNotification, NotificationType, NOTIFICATION_TYPE_CONFIG, NotificationQueryParams, PaginatedNotificationsResponse } from '../types/notification';
-import { publishNotificationChange } from '../lib/notificationChanges';
+import { publishNotificationChange, subscribeNotificationChanges } from '../lib/notificationChanges';
 
 const PAGE_SIZE = 20;
 
@@ -61,6 +61,10 @@ export const NotificationCenter: React.FC<{ userId: string; service: Notificatio
     void load();
     return () => { mounted.current = false; requestId.current += 1; };
   }, [load]);
+
+  useEffect(() => subscribeNotificationChanges((change) => {
+    if (change.userId === userId && change.source === 'bell') void refresh();
+  }), [userId]);
 
   const mutate = async (action: () => Promise<void>, fallback: string) => {
     if (mutationInFlight.current) return;

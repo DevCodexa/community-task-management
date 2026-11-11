@@ -14,7 +14,7 @@ import {
   mergeNotificationFeed,
   shouldAcceptRealtimeNotification,
 } from '../lib/notificationState.js';
-import { subscribeNotificationChanges } from '../lib/notificationChanges';
+import { publishNotificationChange, subscribeNotificationChanges } from '../lib/notificationChanges';
 
 // ===========================================================
 // HOOK INTERFACE
@@ -80,6 +80,7 @@ export const useNotificationsCore = (
   const [error, setError] = useState<string | null>(null);
   const [stats] = useState<NotificationStats | null>(null);
   const seenNotificationIds = useRef<Set<string>>(new Set());
+  const notifiedRealtimeIds = useRef<Set<string>>(new Set());
   const pendingReadIds = useRef<Set<string>>(new Set());
   const fetchRequestId = useRef(0);
   const unreadRequestId = useRef(0);
@@ -167,11 +168,14 @@ export const useNotificationsCore = (
       pendingReadIds.current.add(id);
       try {
         await service.markAsRead(id);
+        if (activeUserId.current !== user_id) return;
         setNotifications((prev) =>
           prev.map((n) => n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n)
         );
+        publishNotificationChange({ userId: user_id, type: 'read', id, source: 'bell' });
         await refreshUnreadCount();
       } catch (err: any) {
+        if (activeUserId.current !== user_id) return;
         setError(err.message || 'Bildirim okundu işaretlenirken hata oluştu');
         console.error('Mark as read error:', err);
       } finally {
@@ -189,19 +193,18 @@ export const useNotificationsCore = (
     if (!user_id) return;
     try {
       await service.markAllAsRead(user_id);
+      if (activeUserId.current !== user_id) return;
 
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true }))
-      );
-
-      // A realtime insert may have arrived while the mutation was pending.
+      // A realtime insert may have arrived after the server marked older rows read.
+      publishNotificationChange({ userId: user_id, type: 'read-all', source: 'bell' });
+      await fetchNotifications();
       await refreshUnreadCount();
     } catch (err: any) {
+      if (activeUserId.current !== user_id) return;
       setError(err.message || 'Bildirimler okundu işaretlenirken hata oluştu');
       console.error('Mark all as read error:', err);
     }
-  }, [user_id, service, refreshUnreadCount]);
+  }, [user_id, service, fetchNotifications, refreshUnreadCount]);
 
   // ===========================================================
   // REMOVE NOTIFICATION
@@ -211,12 +214,15 @@ export const useNotificationsCore = (
     if (!user_id) return;
     try {
       await service.deleteNotification(id);
+      if (activeUserId.current !== user_id) return;
 
       // Update local state
       setNotifications((prev) => prev.filter((n) => n.id !== id));
 
+      publishNotificationChange({ userId: user_id, type: 'delete', id, source: 'bell' });
       await refreshUnreadCount();
     } catch (err: any) {
+      if (activeUserId.current !== user_id) return;
       setError(err.message || 'Bildirim silinirken hata oluştu');
       console.error('Remove notification error:', err);
     }
@@ -225,7 +231,7 @@ export const useNotificationsCore = (
   // The full notification page and the bell are mounted independently.
   // Reconcile mutations made on that page without broadcasting another user's data.
   useEffect(() => subscribeNotificationChanges((change) => {
-    if (!user_id || change.userId !== user_id) return;
+    if (!user_id || change.userId !== user_id || change.source === 'bell') return;
     if (change.type === 'clear-all') {
       seenNotificationIds.current.clear();
       setNotifications([]);
@@ -254,6 +260,13 @@ export const useNotificationsCore = (
     // A realtime INSERT can race the initial SELECT. Deduplicate by stable database ID.
     const callback: RealtimeNotificationCallback = (notification) => {
       // Defense in depth: never add a notification for another recipient to this UI.
+      if (notification.user_id !== user_id) return;
+      // Even if the bell's initial fetch already included this row, the page's
+      // concurrent fetch may have missed it. Notify the page once per event ID.
+      if (!notifiedRealtimeIds.current.has(notification.id)) {
+        notifiedRealtimeIds.current.add(notification.id);
+        publishNotificationChange({ userId: user_id, type: 'insert', id: notification.id, source: 'bell' });
+      }
       if (!shouldAcceptRealtimeNotification(notification, user_id, seenNotificationIds.current)) return;
       setNotifications((prev) => [notification, ...prev.filter((item) => item.id !== notification.id)]);
       // Refresh from the database rather than incrementing a count that may race the initial fetch.
@@ -261,7 +274,7 @@ export const useNotificationsCore = (
     };
 
     const unsubscribeFn = service.subscribeToNotifications(callback, user_id);
-    return () => unsubscribeFn();
+    return () => { notifiedRealtimeIds.current.clear(); unsubscribeFn(); };
   }, [enableRealtime, user_id, refreshUnreadCount, service]);
 
   // ===========================================================
@@ -273,6 +286,7 @@ export const useNotificationsCore = (
 
     const initialize = async () => {
       if (!user_id) {
+        activeUserId.current = undefined;
         setNotifications([]);
         setUnreadCount(0);
         setIsLoading(false);
