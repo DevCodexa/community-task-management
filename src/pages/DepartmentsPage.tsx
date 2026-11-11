@@ -93,7 +93,7 @@ export const DepartmentsPage: React.FC = () => {
   };
 
   const handleDeleteDepartment = async (department: OrgDepartment) => {
-    const confirmed = window.confirm(`"${department.name}" bölümünü kalıcı olarak silmek istediğinize emin misiniz?`);
+    const confirmed = window.confirm(`"${department.name}" bölümünü kalıcı olarak silmek istediğinize emin misiniz? Bağlı alanlar, projeler ve üye atamaları da silinir.`);
     if (!confirmed) return;
 
     setLoading(true);

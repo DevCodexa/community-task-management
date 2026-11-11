@@ -330,12 +330,16 @@ export const updateDepartment = async (payload: {
 };
 
 export const deleteDepartment = async (departmentId: string): Promise<void> => {
-  const { error } = await supabase
+  // A single DELETE lets PostgreSQL enforce the existing cascading FKs in one transaction.
+  const { data, error } = await supabase
     .from('org_departments')
     .delete()
-    .eq('id', departmentId);
+    .eq('id', departmentId)
+    .select('id')
+    .maybeSingle();
 
   if (error) throwError(error);
+  if (!data) throw new Error('Bölüm silinemedi veya bulunamadı. Yetkinizi kontrol edip tekrar deneyin.');
 };
 
 // ------------------------------------------------------------
@@ -425,21 +429,16 @@ export const updateArea = async (payload: {
 };
 
 export const deleteArea = async (areaId: string): Promise<void> => {
-  // İlişki tabloları için DB cascade yoksa; önce org_area_members temizlenir.
-  // (RLS/policy bağlı olarak delete iki adım gerektirebilir.)
-  const { error: delMembersErr } = await supabase
-    .from('org_area_members')
-    .delete()
-    .eq('area_id', areaId);
-
-  if (delMembersErr) throwError(delMembersErr);
-
-  const { error: delErr } = await supabase
+  // A single DELETE lets PostgreSQL enforce the existing cascading FKs in one transaction.
+  const { data, error } = await supabase
     .from('org_areas')
     .delete()
-    .eq('id', areaId);
+    .eq('id', areaId)
+    .select('id')
+    .maybeSingle();
 
-  if (delErr) throwError(delErr);
+  if (error) throwError(error);
+  if (!data) throw new Error('Alan silinemedi veya bulunamadı. Yetkinizi kontrol edip tekrar deneyin.');
 };
 
 // Area üyeleri atanır (many-to-many): org_area_members
@@ -571,12 +570,16 @@ export const updateProject = async (payload: {
 };
 
 export const deleteProject = async (projectId: string): Promise<void> => {
-  const { error } = await supabase
+  // A single DELETE lets PostgreSQL enforce the existing cascading FKs in one transaction.
+  const { data, error } = await supabase
     .from('org_projects')
     .delete()
-    .eq('id', projectId);
+    .eq('id', projectId)
+    .select('id')
+    .maybeSingle();
 
   if (error) throwError(error);
+  if (!data) throw new Error('Proje silinemedi veya bulunamadı. Yetkinizi kontrol edip tekrar deneyin.');
 };
 
 
