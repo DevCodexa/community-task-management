@@ -260,7 +260,7 @@ export const AreaModal: React.FC<AreaModalProps> = ({
 
   const handleDelete = async () => {
     if (mode !== 'edit' || !area?.id) return;
-    const ok = window.confirm(`"${area.name}" alanını silmek istediğinize emin misiniz?`);
+    const ok = window.confirm(`"${area.name}" alanını silmek istediğinize emin misiniz? Bu alana bağlı projeler ve üye atamaları da silinir.`);
     if (!ok) return;
 
     setSubmitting(true);

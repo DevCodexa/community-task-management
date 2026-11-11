@@ -222,7 +222,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const handleDelete = async () => {
     if (mode !== 'edit' || !project?.id) return;
 
-    const ok = window.confirm(`"${project.name}" projesini silmek istediğinize emin misiniz?`);
+    const ok = window.confirm(`"${project.name}" projesini silmek istediğinize emin misiniz? Projeye bağlı üye atamaları da silinir.`);
     if (!ok) return;
 
     setSubmitting(true);
