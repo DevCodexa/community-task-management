@@ -189,3 +189,145 @@ for (const operation of ['read', 'delete'] as const) {
     await act(async () => { view.unmount(); });
   });
 }
+
+for (const operation of ['read', 'delete', 'read-all'] as const) {
+  test(`the center refreshes after a successful bell ${operation}`, async () => {
+    const rows = [notification('alpha')];
+    const pageService = serviceFor(rows);
+    const feedService: NotificationFeedService = {
+      ...pageService,
+      getUnreadCount: async () => rows.filter((row) => !row.is_read).length,
+      subscribeToNotifications: () => () => {},
+    };
+    function Bell() {
+      const bell = useNotificationsCore({ user_id: 'member-a' }, feedService);
+      const action = () => operation === 'read' ? bell.markAsRead('alpha')
+        : operation === 'delete' ? bell.removeNotification('alpha') : bell.markAllAsRead();
+      return <button data-testid="bell-action" onClick={() => void action()}>Bell action</button>;
+    }
+    let view!: ReactTestRenderer;
+    await act(async () => { view = create(<><Bell /><NotificationCenter userId="member-a" service={pageService} confirmClear={() => true} /></>); });
+    await act(async () => { view.root.findAllByType('select')[1].props.onChange({ target: { value: 'unread' } }); });
+    assert.match(textOf(view), /alpha/);
+    await act(async () => { view.root.findByProps({ 'data-testid': 'bell-action' }).props.onClick(); });
+    assert.match(textOf(view), /Bu filtrede bildirim yok/);
+    assert.doesNotMatch(textOf(view), /"alpha"/);
+    await act(async () => { view.unmount(); });
+  });
+}
+
+test('a realtime insert refreshes the center only for the active recipient', async () => {
+  const rows = [notification('alpha')];
+  const pageService = serviceFor(rows);
+  let realtime!: (row: FullNotification) => void;
+  let requests = 0;
+  const originalGet = pageService.getNotifications;
+  pageService.getNotifications = async (params) => { requests += 1; return originalGet(params); };
+  const feedService: NotificationFeedService = {
+    ...pageService,
+    getUnreadCount: async () => rows.filter((row) => !row.is_read).length,
+    subscribeToNotifications: (callback) => { realtime = callback; return () => {}; },
+  };
+  function Bell() { useNotificationsCore({ user_id: 'member-a' }, feedService); return null; }
+  let view!: ReactTestRenderer;
+  await act(async () => { view = create(<><Bell /><NotificationCenter userId="member-a" service={pageService} confirmClear={() => true} /></>); });
+  const initialRequests = requests;
+  await act(async () => { realtime({ ...notification('foreign'), user_id: 'member-b' }); });
+  assert.equal(requests, initialRequests);
+  rows.unshift(notification('new'));
+  await act(async () => { realtime(rows[0]); });
+  assert.match(textOf(view), /new/);
+  assert.equal(requests, initialRequests + 1);
+  await act(async () => { realtime(rows[0]); });
+  assert.equal(requests, initialRequests + 1);
+  await act(async () => { view.unmount(); });
+});
+
+test('a realtime event refreshes the page even if the bell already fetched that row', async () => {
+  const entry = notification('already-in-bell');
+  let pageRequests = 0;
+  const pageService = serviceFor([entry]);
+  pageService.getNotifications = async () => {
+    pageRequests += 1;
+    return response(pageRequests === 1 ? [] : [entry]);
+  };
+  let realtime!: (row: FullNotification) => void;
+  const feedService: NotificationFeedService = {
+    ...pageService,
+    getNotifications: async () => response([entry]),
+    getUnreadCount: async () => 1,
+    subscribeToNotifications: (callback) => { realtime = callback; return () => {}; },
+  };
+  function Bell() {
+    const { notifications } = useNotificationsCore({ user_id: 'member-a' }, feedService);
+    return <output data-testid="bell-feed">{notifications.map((row) => row.id).join(',')}</output>;
+  }
+  let view!: ReactTestRenderer;
+  await act(async () => { view = create(<><Bell /><NotificationCenter userId="member-a" service={pageService} confirmClear={() => true} /></>); });
+  assert.match(textOf(view), /Bu filtrede bildirim yok/);
+  await act(async () => { realtime(entry); realtime(entry); });
+  assert.equal(pageRequests, 2);
+  assert.equal(view.root.findAllByType('li').length, 1);
+  assert.deepEqual(view.root.findByProps({ 'data-testid': 'bell-feed' }).children, ['already-in-bell']);
+  await act(async () => { view.unmount(); });
+});
+
+test('a notification received during mark-all remains unread in the bell', async () => {
+  const rows = [notification('alpha')];
+  const pageService = serviceFor(rows);
+  const pending = deferred<void>();
+  let realtime!: (row: FullNotification) => void;
+  const feedService: NotificationFeedService = {
+    ...pageService,
+    getNotifications: async (params) => {
+      const result = await pageService.getNotifications(params);
+      return { ...result, data: result.data.map((row) => ({ ...row })) };
+    },
+    getUnreadCount: async () => rows.filter((row) => !row.is_read).length,
+    markAllAsRead: async () => { rows.forEach((row) => { row.is_read = true; }); await pending.promise; return 1; },
+    subscribeToNotifications: (callback) => { realtime = callback; return () => {}; },
+  };
+  function Bell() {
+    const bell = useNotificationsCore({ user_id: 'member-a' }, feedService);
+    return <><button data-testid="all" onClick={() => void bell.markAllAsRead()}>All</button>
+      <output data-testid="state">{bell.notifications.map((row) => `${row.id}:${row.is_read}`).join(',')}</output></>;
+  }
+  let view!: ReactTestRenderer;
+  await act(async () => { view = create(<Bell />); });
+  await act(async () => { view.root.findByProps({ 'data-testid': 'all' }).props.onClick(); });
+  const fresh = { ...notification('new'), created_at: '2026-11-01T12:01:00Z' };
+  rows.unshift(fresh);
+  await act(async () => { realtime(fresh); });
+  await act(async () => { pending.resolve(); await pending.promise; });
+  assert.deepEqual(view.root.findByProps({ 'data-testid': 'state' }).children, ['new:false,alpha:true']);
+  await act(async () => { view.unmount(); });
+});
+
+test('a delayed mark-all response cannot reload the previous recipient after a user switch', async () => {
+  const pending = deferred<void>();
+  const calls: string[] = [];
+  const feedService: NotificationFeedService = {
+    ...serviceFor([]),
+    getNotifications: async ({ user_id }) => {
+      calls.push(user_id!);
+      return response([{ ...notification(user_id!), user_id: user_id! }]);
+    },
+    getUnreadCount: async () => 1,
+    markAllAsRead: async () => { await pending.promise; return 1; },
+    subscribeToNotifications: () => () => {},
+  };
+  function Bell({ userId }: { userId: string }) {
+    const bell = useNotificationsCore({ user_id: userId }, feedService);
+    return <><button data-testid="all" onClick={() => void bell.markAllAsRead()}>All</button>
+      <output data-testid="state">{bell.notifications.map((row) => row.id).join(',')}</output></>;
+  }
+  let view!: ReactTestRenderer;
+  await act(async () => { view = create(<Bell userId="member-a" />); });
+  await act(async () => { view.root.findByProps({ 'data-testid': 'all' }).props.onClick(); });
+  await act(async () => { view.update(<Bell userId="member-b" />); });
+  assert.deepEqual(view.root.findByProps({ 'data-testid': 'state' }).children, ['member-b']);
+  await act(async () => { pending.resolve(); await pending.promise; });
+  assert.deepEqual(view.root.findByProps({ 'data-testid': 'state' }).children, ['member-b']);
+  assert.deepEqual(calls, ['member-a', 'member-b']);
+  await act(async () => { view.unmount(); });
+});

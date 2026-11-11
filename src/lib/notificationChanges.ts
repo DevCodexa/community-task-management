@@ -1,6 +1,7 @@
-export type NotificationChange =
-  | { userId: string; type: 'read' | 'delete'; id: string }
-  | { userId: string; type: 'read-all' | 'clear-all' };
+export type NotificationChange = (
+  | { userId: string; type: 'read' | 'delete' | 'insert'; id: string }
+  | { userId: string; type: 'read-all' | 'clear-all' }
+) & { source?: 'bell' };
 
 const listeners = new Set<(change: NotificationChange) => void>();
 
