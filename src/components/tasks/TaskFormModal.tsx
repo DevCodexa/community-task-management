@@ -3,8 +3,6 @@ import {
   X, 
   Save, 
   Calendar, 
-  Image as ImageIcon, 
-  User, 
   Star, 
   AlertCircle,
   CheckCircle2,
@@ -88,7 +86,6 @@ const fetchMembers = async () => {
   const membersWithCapacity = useMemo(() => {
     return members.map(member => {
       const currentCount = taskCounts[member.id] || 0;
-      const remaining = maxTaskLimit - currentCount;
       const isAtCapacity = currentCount >= maxTaskLimit;
       return {
         ...member,
@@ -152,22 +149,6 @@ const fetchMembers = async () => {
     }
   };
 
-
-  const handleImagePaste = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          // Supabase Storage upload would go here
-          // For now, generate placeholder URL
-          const placeholder = URL.createObjectURL(file);
-          setFormData(prev => ({ ...prev, image_url: placeholder }));
-          e.preventDefault();
-        }
-      }
-    }
-  };
 
   if (!isOpen) return null;
 

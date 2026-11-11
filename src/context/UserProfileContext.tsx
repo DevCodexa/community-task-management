@@ -74,8 +74,8 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     const initializeAuth = async () => {
       // console.log('initializeAuth called');
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        // console.log('getSession result:', { session: !!session, userEmail: session?.user?.email, error });
+        const { data: { session } } = await supabase.auth.getSession();
+        // console.log('getSession result:', { session: !!session, userEmail: session?.user?.email });
         
         if (session) {
           // console.log('Setting user:', session.user.id);

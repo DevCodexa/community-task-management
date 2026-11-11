@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Users, Mic, Search, Filter, Edit3, Eye, Trash2, Loader2, AlertCircle, MoreVertical } from 'lucide-react';
+import { Users, Mic, Search, Edit3, Eye, Trash2, Loader2, AlertCircle, MoreVertical } from 'lucide-react';
 
 import { FullEvent, EventType } from '../../types/event';
 import { getEventsStaffCounts, getEventsSpeakerCounts } from '../../lib/supabaseEvents';
