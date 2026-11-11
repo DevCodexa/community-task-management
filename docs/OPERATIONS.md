@@ -90,6 +90,29 @@ authentication, RLS or database mutations work.
 
 ## 3. Database changes and recovery
 
+### Authenticated self-profile
+
+The `/profile` page calls the no-argument `get_my_profile()` RPC. It derives
+the member from the existing authenticated identity helper and returns only
+that member's profile, tasks and department memberships. It runs with the
+caller's permissions and RLS; it does not return stored profile tokens.
+Historical `/profile/<token>` links no longer grant profile access.
+
+The matching `20261111172605_authenticated_self_profile.sql` migration
+replaces all existing `profiles` policies and removes browser access to the
+legacy `profiles` table and its token helper. Review any environment-specific
+policies before applying it.
+Review and verify it in an isolated, compatible Supabase project with real
+registered, unregistered and anonymous sessions before production. Deploy
+the migration before the frontend version that calls the RPC. Applying the
+migration retires the historical token access immediately; merging the PR
+alone does not apply it. Coordinate deployment and rollback, and do not
+re-enable public token-table reads as a workaround.
+
+`node --test tests/self-profile-rls.test.mjs tests/self-profile-ui.test.mjs`
+checks a synthetic PostgreSQL schema and React behavior; it does not replace
+an end-to-end test of the real Auth/RLS configuration.
+
 ### Community-data access
 
 The reviewed policy in

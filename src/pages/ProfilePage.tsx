@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useUserProfile } from '../context/UserProfileContext';
 
 type MemberTask = {
   id: string;
@@ -11,11 +11,7 @@ type MemberTask = {
   points?: number | null;
 };
 
-
 type ProfilePageData = {
-  id: string;
-  access_token: string;
-  created_at?: string;
   member: {
     id: string;
     name: string;
@@ -26,134 +22,63 @@ type ProfilePageData = {
     comm_title?: string | null;
     avatar?: string | null;
   };
-  org_department_members?: {
-    id: string;
-    department?: {
-      id: string;
-      name: string;
-    };
-  }[];
-  member_announcements?: {
-    id: string;
-    announcement_title: string;
-    announcement_body?: string | null;
-  }[];
-  member_attachments?: {
-    id: string;
-    attachment_name: string;
-    attachment_url: string;
-  }[];
+  org_department_members?: { id: string; department?: { id: string; name: string } }[];
+  member_announcements?: { id: string; announcement_title: string; announcement_body?: string | null }[];
+  member_attachments?: { id: string; attachment_name: string; attachment_url: string }[];
   tasks?: MemberTask[];
 };
 
-
-function InvalidLinkCard() {
-  return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-xl rounded-2xl border border-red-200 bg-red-50/60 p-6 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 h-10 w-10 shrink-0 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold">
-            !
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-lg sm:text-xl font-semibold text-red-900">Geçersiz Link</h1>
-            <p className="text-sm text-red-800/80">
-              Bu token geçerli bir profile ait değil veya erişim kısıtına takılmış olabilir.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+export function LegacyProfileLink() {
+  return <div className="p-8 text-sm text-[var(--text-secondary)]">
+    Bu eski profil bağlantısı artık kullanılamıyor. Profilinizi görmek için giriş yapıp Profilim sayfasını açın.
+  </div>;
 }
 
 export default function ProfilePage() {
-  const { token } = useParams<{ token: string }>();
-
-  const normalizedToken = useMemo(() => (token ?? '').trim(), [token]);
-
+  const { user, profile, isLoading: authLoading } = useUserProfile();
   const [loading, setLoading] = useState(true);
-  const [invalid, setInvalid] = useState(false);
+  const [error, setError] = useState(false);
   const [data, setData] = useState<ProfilePageData | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      setLoading(true);
-      setInvalid(false);
-      setData(null);
-
-      if (!normalizedToken) {
-        if (mounted) setInvalid(true);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // RLS session variable approach:
-        // We must set request.profile_token for this DB session.
-        // Supabase JS uses a pooled connection; set_config is session-scoped, so this
-        // must be done in the same PostgREST/Supabase RPC call.
-        // We do it in a single SQL call via `rpc` is not available for raw SQL,
-        // so we use `supabase.rpc` with a tiny wrapper.
-        // If you prefer, you can later replace this with an Edge Function.
-
-        // Create & call a SQL function inline is not possible here, so we do a best-effort:
-        // set_config is executed through `supabase.from('profiles')` is not available.
-        // Therefore for now, we rely on standard eq('access_token', token) query.
-        // (RLS policies above require request.profile_token; if not set, anon may get empty.)
-
-        const { data: p, error } = await supabase
-          .from('profiles')
-          .select(
-            `id, access_token, created_at,
-             member:members ( id, name, email, phone, company, job_title, comm_title, avatar ),
-             tasks ( id, title, description, status, deadline, points ),
-             org_department_members:org_department_members ( id, department:org_departments ( id, name ) ),
-             org_project_members:org_project_members ( id, project:org_projects ( id, name ) ),
-             event_staff:event_staff ( id, event:events ( id, title, start_date ) )`
-          )
-          .eq('access_token', normalizedToken)
-          .maybeSingle();
-
-
-        if (!mounted) return;
-
-        if (error || !p) {
-          setInvalid(true);
-          setData(null);
-          setLoading(false);
-          return;
-        }
-
-        setData(p as ProfilePageData);
-        setLoading(false);
-      } catch (e) {
-        if (!mounted) return;
-        setInvalid(true);
-        setData(null);
-        setLoading(false);
-      }
+    let active = true;
+    setData(null);
+    setError(false);
+    if (authLoading) return () => { active = false; };
+    if (!user || !profile?.id) {
+      setLoading(false);
+      return () => { active = false; };
     }
 
-    load();
+    setLoading(true);
+    const expectedMemberId = profile.id;
+    void (async () => {
+      try {
+        // The database resolves the member from the authenticated session.
+        const { data: result, error: requestError } = await supabase.rpc('get_my_profile');
+        if (!active) return;
+        if (requestError || !result || result.member?.id !== expectedMemberId) {
+          setError(true);
+          return;
+        }
+        setData(result as ProfilePageData);
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [authLoading, user?.id, profile?.id]);
 
-    return () => {
-      mounted = false;
-    };
-  }, [normalizedToken]);
-
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="animate-pulse text-sm text-zinc-600">Yükleniyor...</div>
-      </div>
-    );
+  if (authLoading || loading || (data && data.member.id !== profile?.id)) {
+    return <div className="p-8 text-sm text-[var(--text-secondary)]">Profil yükleniyor…</div>;
   }
-
-  if (invalid || !data) {
-    return <InvalidLinkCard />;
+  if (!user || !profile?.id) {
+    return <div className="p-8 text-sm text-[var(--text-secondary)]">Profilinizi görmek için giriş yapmalısınız.</div>;
+  }
+  if (error || !data) {
+    return <div role="alert" className="p-8 text-sm text-red-500">Profil yüklenemedi. Lütfen tekrar deneyin.</div>;
   }
 
   const member = data.member;
@@ -163,11 +88,6 @@ export default function ProfilePage() {
   const areas = data.org_department_members ?? [];
   const announcements = data.member_announcements ?? [];
   const attachments = data.member_attachments ?? [];
-
-  // Dep. (org_department_members) içinden display alanı: department.name
-  const areaNames = areas.map((x) => x.department?.name).filter(Boolean) as string[];
-
-
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">

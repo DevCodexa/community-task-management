@@ -1,7 +1,7 @@
 -- ============================================================
 -- Profiles + Magic Link + Member Visibility Tables
 -- ============================================================
--- Run this in your Supabase SQL Editor
+-- Historical schema reference. See reviewed migrations for current access rules.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -13,7 +13,7 @@ create table if not exists profiles (
   -- Connect 1:1 with existing members record
   member_id uuid not null unique references members(id) on delete cascade,
 
-  -- Magic link token (unguessable, UUID)
+  -- Historical token column; no longer grants profile access.
   access_token uuid not null unique,
 
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -38,41 +38,14 @@ for each row
 execute function set_updated_at_utc();
 
 -- ------------------------------------------------------------
--- 3) Fill access_token for existing rows (if any)
+-- 3) Historical token access is retired.
+-- Keep the existing column for historical compatibility; do not generate,
+-- expose, or use its values for authorization. The authenticated self-profile
+-- migration controls access and revokes browser privileges on this table.
 -- ------------------------------------------------------------
--- If access_token already exists (non-null), this is harmless.
-update profiles
-set access_token = gen_random_uuid()
-where access_token is null;
-
--- If you inserted profiles manually without access_token, you can also run:
--- alter table profiles alter column access_token set default gen_random_uuid();
-
--- ------------------------------------------------------------
--- 4) RLS setup (Magic Link Read-Only)
--- ------------------------------------------------------------
--- URL token DB’ye otomatik taşınmaz; bu yüzden RLS’i sadece `profiles` üzerinde tutuyoruz.
--- Bu dosya dışında zaten repo konvansiyonlarına göre diğer tabloların anon read policy’leri vardır.
-
--- Token okuma helper
-create or replace function public.current_profile_token()
-returns uuid
-language sql
-stable
-as $$
-  select nullif(current_setting('request.profile_token', true), '')::uuid;
-$$;
-
--- Enable RLS only on profiles
-alter table profiles enable row level security;
-
--- Allow anon to read matching token
-
-drop policy if exists "anon can read profile by token" on profiles;
-create policy "anon can read profile by token"
-  on profiles for select
-  to anon
-  using (access_token = public.current_profile_token());
+alter table public.profiles enable row level security;
+drop policy if exists "anon can read profile by token" on public.profiles;
+revoke all on table public.profiles from public, anon, authenticated;
 
 -- ------------------------------------------------------------
 -- Notlar
