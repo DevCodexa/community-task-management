@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Trash2,
   AlertTriangle,
-  Mic,
 } from 'lucide-react';
 import { SpeakerTable } from '../components/speakers/SpeakerTable';
 import { SpeakerModal } from '../components/speakers/SpeakerModal';

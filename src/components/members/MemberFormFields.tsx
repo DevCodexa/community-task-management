@@ -7,31 +7,10 @@ import {
   Briefcase,
   Award,
   Calendar,
-  Shield,
   FileText,
   ImageIcon,
 } from 'lucide-react';
-import { MemberFormData, SystemRole } from '../../types/member';
-
-const systemRoles: SystemRole[] = ['Super Admin', 'Admin', 'User'];
-
-const roleMeta: Record<
-  SystemRole,
-  { label: string; color: string }
-> = {
-  'Super Admin': {
-    label: 'Super Admin',
-    color: 'text-purple-400',
-  },
-  Admin: {
-    label: 'Admin',
-    color: 'text-amber-400',
-  },
-  User: {
-    label: 'User',
-    color: 'text-silver-400',
-  },
-};
+import { MemberFormData } from '../../types/member';
 
 const days = Array.from({ length: 31 }, (_, i) => i + 1);
 const months = [
@@ -244,29 +223,6 @@ export const MemberFormFields: React.FC<MemberFormFieldsProps> = ({
             </select>
           </div>
         </div>
-
-      {/*  <div>
-          <label className={labelBase}>Sistem Rolü</label>
-          <div className="relative">
-            <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-silver-600 z-10" />
-            <select
-              name="system_role"
-              value={formData.system_role}
-              onChange={onChange}
-              className={`w-full pl-9 pr-8 py-2.5 rounded-lg bg-white/[0.03] border border-white/10 text-sm focus:outline-none focus:border-ice-500/50 focus:ring-1 focus:ring-ice-500/20 transition-all appearance-none cursor-pointer font-medium ${roleMeta[formData.system_role].color}`}
-            >
-              {systemRoles.map((role) => (
-                <option
-                  key={role}
-                  value={role}
-                  className={`bg-coal-800 font-medium ${roleMeta[role].color}`}
-                >
-                  {roleMeta[role].label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>*/}
 
       </div>
 

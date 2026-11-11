@@ -22,6 +22,8 @@ jobs:
       - run: npm ci
       - name: Audit frontend production dependencies
         run: npm audit --omit=dev --audit-level=high
+      - name: Check frontend TypeScript
+        run: npm run typecheck
       - run: npm run test:notifications
       - run: npm run build
       - run: node --test tests/supabase-config.test.mjs

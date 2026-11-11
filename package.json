@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "test:notifications": "node --import tsx --test tests/notification-state.test.mjs tests/notification-center.test.tsx",
     "preview": "vite preview"
   },

@@ -4,7 +4,7 @@ import {
   Save,
   UserPlus,
 } from 'lucide-react';
-import { Speaker, SpeakerFormData, SpeakerStatus } from '../../types/speaker';
+import { Speaker, SpeakerFormData } from '../../types/speaker';
 import { createSpeaker, updateSpeaker } from '../../lib/supabaseSpeakers';
 
 interface SpeakerModalProps {

@@ -11,7 +11,6 @@ import {
   Clock,
   X,
   Calendar,
-  Users,
   Link2,
   UserPlus,
   UserMinus,
