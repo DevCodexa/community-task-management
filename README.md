@@ -268,14 +268,14 @@ Realtime subscriptions allow new notifications to appear without requiring users
 
 # Personal Member Profiles
 
-The application also includes a token-based member profile experience.
+The application includes an authenticated, read-only member profile.
 
-Members can access a dedicated read-only profile page through a generated profile link.
+Members can access their own profile after signing in.
 
 Example:
 
 ```text
-/profile/<token>
+/profile
 ```
 
 The profile can contain information such as:
@@ -284,13 +284,12 @@ The profile can contain information such as:
 * Assigned tasks
 * Organizational relationships
 * Department information
-* Announcements
-* Attachments
-* Event-related information
+* Announcement and attachment placeholders (not populated by the current RPC)
 
 The purpose of this feature is to provide each community member with a dedicated view of the information and work relevant to them.
 
-The member-facing experience is still an active area of development and can evolve into a richer personal workspace.
+Historical token links are retired and cannot be used for profile access. The authenticated
+profile RPC migration must be deployed before releasing the corresponding frontend.
 
 ---
 
@@ -389,7 +388,7 @@ The main application routes include:
 | `/konusmacilar`                       | Speakers           | Speaker management                 |
 | `/etkinlikler`                        | Events             | Event management                   |
 | `/duyurular`                          | Announcements      | Community announcements            |
-| `/profile/:token`                     | Member Profile     | Token-based read-only profile      |
+| `/profile`                            | Member Profile     | Authenticated member's own profile |
 | `/topluluk-ayarlar`                   | Community Settings | Community configuration            |
 
 ---
