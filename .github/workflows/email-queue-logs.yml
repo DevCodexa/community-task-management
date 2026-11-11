@@ -1,0 +1,26 @@
+name: Email queue log integration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  email-queue-logs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install frontend test dependencies
+        run: npm ci
+      - name: Install and compile the worker
+        run: npm ci && npm run build
+        working-directory: email-worker
+      - name: Exercise queue logs against PostgreSQL-compatible constraints
+        run: node --test supabase/tests/email-queue-logs.test.mjs
