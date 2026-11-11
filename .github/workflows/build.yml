@@ -24,6 +24,7 @@ jobs:
       - run: node --test tests/event-delete-ui.test.mjs
       - run: node --test tests/task-mutations.test.mjs
       - run: node --test tests/task-delete-ui.test.mjs
+      - run: node --test tests/private-community-rls.test.mjs
 
   email-worker:
     name: Email worker tests and TypeScript build

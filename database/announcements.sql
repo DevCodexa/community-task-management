@@ -5,7 +5,7 @@
 -- ============================================================
 -- IMPORTANT
 -- - Uses existing event_type_enum (created in database/events.sql)
--- - RLS DISABLED (per project convention)
+-- - RLS must stay enabled; apply reviewed versioned policies separately
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -92,8 +92,8 @@ for each row
 execute function set_updated_at_utc();
 
 -- ------------------------------------------------------------
--- 5) RLS disabled (project convention)
+-- 5) RLS enabled; reviewed versioned policies are required
 -- ------------------------------------------------------------
-alter table announcements disable row level security;
-alter table announcement_members disable row level security;
+alter table announcements enable row level security;
+alter table announcement_members enable row level security;
 
