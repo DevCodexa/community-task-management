@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS public.speaker_email_queue (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   speaker_id uuid NOT NULL,
-  email_type text NOT NULL DEFAULT 'welcome',
+  email_type text NOT NULL DEFAULT 'speaker_invite',
   status text NOT NULL DEFAULT 'pending',
   error_message text NULL,
   retry_count integer NOT NULL DEFAULT 0,
@@ -59,7 +59,7 @@ BEGIN
       scheduled_at
     ) VALUES (
       NEW.id,
-      'welcome',
+      'speaker_invite',
       'pending',
       timezone('utc'::text, now())
     );
