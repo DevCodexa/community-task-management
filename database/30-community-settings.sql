@@ -2,7 +2,7 @@
 -- Community Settings + Menu Items
 -- ============================================================
 -- IMPORTANT
--- - Uses existing project convention: RLS disabled (like other SQL files)
+-- - RLS must stay enabled; apply reviewed versioned policies separately
 -- - This script creates:
 --     1) community_settings table (singleton-ish row)
 --     2) menu_items table
@@ -92,10 +92,10 @@ create index if not exists idx_menu_items_is_active on menu_items(is_active);
 create index if not exists idx_menu_items_path on menu_items(path);
 
 -- ------------------------------------------------------------
--- 3) RLS disabled (project convention)
+-- 3) RLS enabled; reviewed versioned policies are required
 -- ------------------------------------------------------------
-alter table community_settings disable row level security;
-alter table menu_items disable row level security;
+alter table community_settings enable row level security;
+alter table menu_items enable row level security;
 
 -- ------------------------------------------------------------
 -- 4) Seed default data (optional but helpful)

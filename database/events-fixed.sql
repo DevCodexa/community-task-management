@@ -1,5 +1,5 @@
 -- ============================================================
--- FIXED Events Table - Run this in Supabase SQL Editor
+-- HISTORICAL DESTRUCTIVE RESET - DO NOT RUN ON A LIVE DATABASE
 -- Fixes enum syntax error causing 'Kaydetme başarısız'
 -- ============================================================
 
@@ -7,7 +7,7 @@
 DROP TYPE IF EXISTS event_type_enum CASCADE;
 CREATE TYPE event_type_enum AS ENUM ('Workshop', 'Face-to-Face', 'Bootcamp', 'Webinar', 'Other');
 
--- 2. Recreate tables (safe: if not exists + cascade handled)
+-- 2. DESTRUCTIVE: drops existing tables and dependent objects
 DROP TABLE IF EXISTS event_staff CASCADE;
 DROP TABLE IF EXISTS events CASCADE;
 
@@ -42,9 +42,9 @@ CREATE INDEX idx_events_title ON events(title);
 CREATE INDEX idx_event_staff_event_id ON event_staff(event_id);
 CREATE INDEX idx_event_staff_member_id ON event_staff(member_id);
 
--- 4. RLS (disabled as original)
-ALTER TABLE events DISABLE ROW LEVEL SECURITY;
-ALTER TABLE event_staff DISABLE ROW LEVEL SECURITY;
+-- 4. RLS enabled; apply reviewed versioned policies separately
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE event_staff ENABLE ROW LEVEL SECURITY;
 
 -- 5. TRIGGER for updated_at
 CREATE OR REPLACE FUNCTION update_events_updated_at()
@@ -60,6 +60,5 @@ CREATE TRIGGER update_events_updated_at
   BEFORE UPDATE ON events
   FOR EACH ROW EXECUTE FUNCTION update_events_updated_at();
 
--- Run this FULL script in Supabase SQL Editor!
--- Then test event creation.
+-- Historical reference only. See the setup and migration guide.
 

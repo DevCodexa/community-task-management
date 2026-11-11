@@ -90,6 +90,40 @@ authentication, RLS or database mutations work.
 
 ## 3. Database changes and recovery
 
+### Community-data access
+
+The reviewed policy in
+`supabase/migrations/20261111150204_restrict_private_community_reads.sql`
+treats announcements, announcement memberships, events, event staff and
+speakers, community settings and menu items as private. None of those tables
+is intentionally public. A registered community member can read shared rows;
+announcement membership rows are visible only to their member or an admin.
+Registered Admin and Super Admin members can manage those records. Other
+authenticated users cannot modify them; anon has no table access. Unnecessary
+TRUNCATE, REFERENCES and TRIGGER table privileges are revoked because RLS
+does not protect TRUNCATE. The policy depends on the existing
+`current_member_id()` and `current_member_role()` helpers.
+
+The schema currently has no organization/tenant key. These policies provide
+one-community role boundaries; they do not establish tenant isolation.
+The migration replaces **all** existing policies on the seven tables, so review
+any environment-specific policies before applying it. The SQL files under
+`database/` include destructive historical resets and do not establish
+the current access contract.
+
+The isolated policy regression test runs PostgreSQL through PGlite:
+
+```sh
+node --test tests/private-community-rls.test.mjs
+```
+
+It creates synthetic tables and identity helpers, so it checks the migration's
+policy behavior without a hosted database. It does not validate the real
+Supabase schema, Auth identity mapping, deployed policies, or browser/API
+behavior. Apply and verify the migration first in a disposable compatible
+Supabase environment, including real member/admin/anonymous sessions. A code
+merge does not apply this migration to a hosted project.
+
 Before any migration, identify the target project and environment, review the
 exact SQL and migration history, prepare a recovery plan and test against an
 isolated compatible database. Back up the target according to its plan and
