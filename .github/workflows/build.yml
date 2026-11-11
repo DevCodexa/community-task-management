@@ -57,4 +57,5 @@ jobs:
       - name: Check production image Node runtime
         run: docker run --rm --entrypoint node email-worker-ci -e "if (Number(process.versions.node.split('.')[0]) !== 24) process.exit(1)"
       - name: Smoke test production image with a local disabled backend
+        timeout-minutes: 2
         run: WORKER_DOCKER_IMAGE=email-worker-ci node --test test/runtime.test.cjs
