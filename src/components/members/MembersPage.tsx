@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search,
   UserPlus,
@@ -19,6 +19,10 @@ export const MembersPage: React.FC = () => {
   const [members, setMembers] = useState<FullMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteInFlight = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState('Tüm Üyeler');
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,16 +107,19 @@ export const MembersPage: React.FC = () => {
   }, [filteredMembers, currentPage]);
 
   const handleEdit = (member: FullMember) => {
+    setSuccess(null);
     setEditingMember(member);
     setIsFormOpen(true);
   };
 
   const handleAdd = () => {
+    setSuccess(null);
     setEditingMember(null);
     setIsFormOpen(true);
   };
 
   const handleFormSuccess = () => {
+    setSuccess(editingMember ? 'Üye güncellendi.' : 'Üye eklendi.');
     fetchMembers();
   };
 
@@ -129,19 +136,27 @@ export const MembersPage: React.FC = () => {
   const promptDelete = (id: string) => {
     const member = members.find((m) => m.id === id);
     if (member) {
+      setDeleteError(null);
+      setSuccess(null);
       setDeleteConfirm({ open: true, member });
     }
   };
 
   const confirmDelete = async () => {
-    if (!deleteConfirm.member) return;
+    if (!deleteConfirm.member || deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setDeleteError(null);
     try {
       await deleteMember(deleteConfirm.member.id);
       setDeleteConfirm({ open: false, member: null });
+      setSuccess('Üye silindi.');
       fetchMembers();
-    } catch (err: any) {
-      setError(err.message || 'Silme işlemi başarısız oldu.');
-      setDeleteConfirm({ open: false, member: null });
+    } catch {
+      setDeleteError('Üye silinemedi veya bulunamadı. Yetkinizi ve bağlantınızı kontrol edip tekrar deneyin.');
+    } finally {
+      deleteInFlight.current = false;
+      setDeleting(false);
     }
   };
 
@@ -210,6 +225,12 @@ export const MembersPage: React.FC = () => {
       </div>
 
       {/* Error Banner */}
+      {success && (
+        <div role="status" className="mb-6 rounded-lg border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-400">
+          {success}
+          <button onClick={() => setSuccess(null)} className="ml-3 underline">Kapat</button>
+        </div>
+      )}
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
@@ -289,7 +310,7 @@ export const MembersPage: React.FC = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-xl"
-            onClick={() => setDeleteConfirm({ open: false, member: null })}
+            onClick={() => { if (!deleteInFlight.current) setDeleteConfirm({ open: false, member: null }); }}
           />
           <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-coal-800/90 shadow-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -305,18 +326,21 @@ export const MembersPage: React.FC = () => {
                 isimli üyeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
               </p>
             </div>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-red-300">{deleteError}</p>}
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => setDeleteConfirm({ open: false, member: null })}
+                disabled={deleting}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium text-silver-400 hover:text-silver-200 hover:bg-white/[0.05] transition-colors"
               >
                 İptal
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition-all"
+                disabled={deleting}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition-all disabled:opacity-50"
               >
-                Evet, Sil
+                {deleting ? 'Siliniyor…' : 'Evet, Sil'}
               </button>
             </div>
           </div>

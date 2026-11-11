@@ -493,13 +493,18 @@ export const decrementActiveTasks = async (id: string): Promise<FullMember> => {
  * Üye sil
  */
 export const deleteMember = async (id: string): Promise<void> => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('members')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     throwError(error);
+  }
+  if (!data) {
+    throw new Error('Üye silinemedi veya bulunamadı. Yetkinizi kontrol edip tekrar deneyin.');
   }
 };
 
