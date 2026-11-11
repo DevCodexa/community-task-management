@@ -69,6 +69,24 @@ database mutations: a passing result does not prove live RLS or email delivery.
 The build produces `dist/`; the current GitHub workflow also tests and builds
 the separate worker.
 
+The GitHub workflow also runs `npm audit --omit=dev --audit-level=high` for
+both the frontend and worker lockfiles. High and critical findings in production
+dependencies fail their respective jobs; moderate findings are reported but do
+not fail this gate. An npm registry outage can also make the check fail. Inspect
+the job log and advisory details rather than using `npm audit fix --force`
+without review. Development dependencies are outside this gate: run `npm audit`
+separately and review those findings, too. The current frontend lockfile still
+has moderate React Router findings whose fix requires a major upgrade, and the
+worker has moderate node-cron/uuid findings. The frontend's development
+dependencies also include high-severity findings (including Vite and build
+tooling), which this production-only gate does not cover. Audit results change
+over time.
+
+This workflow runs checks but does not itself enforce branch protection; that
+repository setting is tracked in [#18](https://github.com/codelovingcat/community-task-management/issues/18).
+Full frontend type-checking and lint coverage remain tracked in
+[#15](https://github.com/codelovingcat/community-task-management/issues/15).
+
 ## 2. Vercel environments
 
 Connect the intended repository and use the repository root as the Vercel

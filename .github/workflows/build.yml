@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   frontend:
     name: Frontend production build
@@ -17,6 +20,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Audit frontend production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run test:notifications
       - run: npm run build
       - run: node --test tests/supabase-config.test.mjs
@@ -40,6 +45,8 @@ jobs:
           cache: npm
           cache-dependency-path: email-worker/package-lock.json
       - run: npm ci
+      - name: Audit worker production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm test
       - name: Build email worker image
         run: docker build --tag email-worker-ci .
