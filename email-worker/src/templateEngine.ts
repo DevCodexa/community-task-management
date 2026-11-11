@@ -46,6 +46,17 @@ export function renderSubject(subject: string, params: Record<string, string>): 
   return subject.replace(placeholder, (_match: string, key: string) => valueFor(params, key));
 }
 
+// Validate both local subject and HTML placeholders before claiming or sending.
+// Only names are returned; parameter values can contain personal data.
+export function missingTemplateParams(source: string, params: Record<string, string>): string[] {
+  const names = new Set<string>();
+  for (const match of source.matchAll(placeholder)) {
+    const name = match[1].trim();
+    if (!params[name]?.trim()) names.add(name);
+  }
+  return [...names];
+}
+
 export function normalizeTemplateParams(params: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(params ?? {})) {

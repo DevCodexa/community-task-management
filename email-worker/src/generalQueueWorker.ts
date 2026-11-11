@@ -1,7 +1,7 @@
 import type { EmailSettings, EmailTemplate, BrevoSendPayload } from './types';
 import { loadEmailSettings } from './settingsLoader';
 import { getSupabaseClient } from './supabaseClient';
-import { normalizeTemplateParams, renderSubject, renderTemplate } from './templateEngine';
+import { missingTemplateParams, normalizeTemplateParams, renderSubject, renderTemplate } from './templateEngine';
 import { sendEmail } from './brevo';
 import { claimDelivery } from './deliveryClaim';
 
@@ -47,17 +47,6 @@ async function updateQueue(id: number, values: Record<string, unknown>, claimTok
   const { data, error } = await query.select('id').maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error(`Queue item ${id} is no longer owned by this worker`);
-}
-
-function missingTemplateParams(source: string, params: Record<string, string>): string[] {
-  const names = new Set<string>();
-  const pattern = /{{\s*([^}]+?)\s*}}/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(source)) !== null) {
-    const name = match[1].trim();
-    if (!params[name]?.trim()) names.add(name);
-  }
-  return Array.from(names);
 }
 
 function buildPayload(settings: EmailSettings, item: GeneralQueueItem, template: EmailTemplate, params: Record<string, string>): BrevoSendPayload {

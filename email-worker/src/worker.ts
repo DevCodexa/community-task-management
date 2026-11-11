@@ -1,7 +1,7 @@
 import type { BrevoSendPayload, EmailSettings, EmailTemplate, SpeakerEmailQueueItem } from './types';
 import { loadEmailSettings } from './settingsLoader';
 import { getSupabaseClient } from './supabaseClient';
-import { renderTemplate, renderSubject } from './templateEngine';
+import { missingTemplateParams, renderTemplate, renderSubject } from './templateEngine';
 import { sendEmail } from './brevo';
 import { claimDelivery } from './deliveryClaim';
 
@@ -29,10 +29,19 @@ function getHttpStatusFromError(e: unknown): number | undefined {
 type RenderParams = Record<string, string>;
 
 function buildTemplateParams(item: SpeakerEmailQueueItem): RenderParams {
+  const speakerName = item.full_name?.trim() || '';
+  const speakerTitle = item.title?.trim() || 'Belirtilmemiş';
+  const speakerCompany = item.company?.trim() || 'Belirtilmemiş';
   return {
-    full_name: item.full_name ?? '',
-    company: item.company ?? '',
-    title: item.title ?? ''
+    speaker_name: speakerName,
+    speaker_title: speakerTitle,
+    speaker_company: speakerCompany,
+    // Keep compatibility with older local templates without changing the
+    // canonical names used by the speaker_invite template.
+    member_name: speakerName,
+    full_name: speakerName,
+    title: speakerTitle,
+    company: speakerCompany
   };
 }
 
@@ -282,7 +291,9 @@ export async function processEmailQueue(): Promise<void> {
       continue;
     }
 
-    const templateCode = item.email_type;
+    // Historical triggers and queue defaults used "welcome". Map existing
+    // jobs as well as newly enqueued legacy jobs to the actual speaker template.
+    const templateCode = item.email_type === 'welcome' ? 'speaker_invite' : item.email_type;
     const nextAttemptCount = item.retry_count + 1;
 
     const template = await fetchTemplate(supabase, templateCode);
@@ -314,6 +325,12 @@ export async function processEmailQueue(): Promise<void> {
     const templateParams = buildTemplateParams(item);
     let payload: BrevoSendPayload;
     try {
+      const missing = Array.from(new Set([
+        ...(templateCode === 'speaker_invite' && !templateParams.speaker_name ? ['speaker_name'] : []),
+        ...missingTemplateParams(template.subject, templateParams),
+        ...missingTemplateParams(template.html_content, templateParams)
+      ]));
+      if (missing.length) throw new Error('Missing required template parameters: ' + missing.join(', '));
       const renderedSubject = renderSubject(template.subject, templateParams);
       const renderedHtml = renderTemplate(template.html_content, templateParams);
       payload = toBrevoPayload({
