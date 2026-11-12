@@ -28,7 +28,12 @@ Set these environment variables in the worker's secret manager:
 - SUPABASE_URL: the Supabase project URL.
 - SUPABASE_SERVICE_ROLE_KEY: server-only service-role key. Never expose this key to the browser or commit it to Git.
 
-Provider settings (brevo_api_key, sender_email, sender_name, daily_limit, retry_limit, and enabled) are read from the backend-only email_settings table.
+- `BREVO_API_KEY`: preferred server-only provider key from the worker secret manager. Never put this in browser variables or Git.
+- `BREVO_REQUIRE_ENV_KEY`: set to `true` after provisioning the key to refuse the legacy database fallback; defaults to `false` for compatibility.
+
+Sender identity, limits and `enabled` are read from the backend-only `email_settings` table. If `BREVO_API_KEY` is set, the worker does not request the database's `brevo_api_key` row. Without it the worker temporarily falls back to that row unless strict mode is enabled. A missing or empty key makes settings loading fail and prevents sending.
+
+Roll out to an isolated environment first: provision the key in the worker secret manager, deploy this worker, verify with an authorized controlled test, and enable strict mode. Other workers may still read the legacy database key; identify and migrate every consumer before removing or rotating the row. No key or settings are changed by merging this PR.
 
 The service must run as a persistent Node.js process because it uses node-cron. A serverless deployment that suspends the process will not run this in-process schedule reliably; use an always-on worker or a protected scheduled endpoint that invokes the processors.
 
@@ -61,8 +66,9 @@ FROM public.speaker_email_queue WHERE status = 'pending' AND delivery_claim_toke
 An operator must compare each result with the worker's logs and Brevo delivery
 records before deciding whether it was accepted and how to reconcile it. Do not
 automatically reset or delete claimed rows: doing so can duplicate delivery.
-Successful general-queue sends that could not be marked sent include the provider
-message ID in worker logs; speaker sends also log the ID on a queue update failure.
+The worker reports the queue ID and outcome category without printing provider
+message IDs or raw provider errors in console logs. Consult restricted provider
+records and the queue when reconciling uncertain deliveries.
 
 **Deployment prerequisite:** apply the accompanying migration before starting this
 version. Before enabling this worker, stop or update **every** other consumer and
