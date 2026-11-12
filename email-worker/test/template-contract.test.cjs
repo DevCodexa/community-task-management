@@ -20,7 +20,7 @@ function fixture({ type = 'welcome', subject = 'Hello {{speaker_name}}', html = 
         const code = this.filters.find(([key]) => key === 'template_code')?.[1]; lookups.push(code);
         return { data: code === 'speaker_invite' && active ? { template_code: code, subject, html_content: html, brevo_template_id: providerTemplateId, is_active: true } : null, error: null };
       }
-      if (this.table === 'email_send_logs') return { data: [], error: null };
+      if (this.table === 'email_send_logs') return { data: null, count: 0, error: null };
       if (this.table !== 'speaker_email_queue') throw new Error('Unexpected table');
       const matches = this.filters.every(([key, value]) => row[key] === value);
       if (matches && this.action === 'update') Object.assign(row, this.values);

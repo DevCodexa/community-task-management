@@ -48,15 +48,19 @@ function buildTemplateParams(item: SpeakerEmailQueueItem): RenderParams {
 async function loadDailySentCount(supabase: ReturnType<typeof getSupabaseClient>): Promise<number> {
   const dateStr = new Date().toISOString().slice(0, 10);
 
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from('email_send_logs')
-    .select('id', { count: 'exact' })
+    .select('id', { count: 'exact', head: true })
     .eq('event_type', 'sent')
     .gte('created_at', dateStr);
 
   if (error) throw new Error(error.message);
-  if (Array.isArray(data)) return data.length;
-  return 0;
+  // PostgREST may cap returned rows; only its exact count is authoritative.
+  // Missing counts fail closed so an outage cannot silently bypass the limit.
+  if (count === null || !Number.isSafeInteger(count) || count < 0) {
+    throw new Error('Unable to determine daily sent count');
+  }
+  return count;
 }
 
 async function fetchPendingBatch(
