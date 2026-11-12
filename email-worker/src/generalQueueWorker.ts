@@ -95,7 +95,7 @@ async function reconcileBirthdayDeliveryMarkers(): Promise<void> {
       p_notification_year: year,
       p_channel: channel
     });
-    if (recordError) log('Could not reconcile birthday delivery marker for queue #' + row.id + ': ' + recordError.message);
+    if (recordError) log('Could not reconcile birthday delivery marker for queue #' + row.id + '.');
   }
 }
 
@@ -119,11 +119,11 @@ export async function processGeneralEmailQueue(): Promise<void> {
 
   // The worker is the daily scheduler for birthday enqueueing. The SQL function is idempotent.
   const { error: birthdayEnqueueError } = await supabase.rpc('enqueue_birthday_emails', { p_personal_only: false });
-  if (birthdayEnqueueError) log('Birthday enqueue failed: ' + birthdayEnqueueError.message);
+  if (birthdayEnqueueError) log('Birthday enqueue failed.');
   try {
     await reconcileBirthdayDeliveryMarkers();
-  } catch (error) {
-    log('Birthday delivery reconciliation failed: ' + String(error));
+  } catch {
+    log('Birthday delivery reconciliation failed.');
   }
 
   const settings = await loadEmailSettings();
@@ -153,8 +153,8 @@ export async function processGeneralEmailQueue(): Promise<void> {
     let template: EmailTemplate | null;
     try {
       template = await getTemplate(item.template_code);
-    } catch (error) {
-      log('Template lookup failed for queue #' + item.id + ': ' + String(error));
+    } catch {
+      log('Template lookup failed for queue #' + item.id + '.');
       continue;
     }
 
@@ -169,7 +169,7 @@ export async function processGeneralEmailQueue(): Promise<void> {
         error_message: message
       });
       try { await insertLog(item, 'failed', { attempt, error: message }); }
-      catch (error) { log('Failure log insert failed for queue #' + item.id + ': ' + String(error)); }
+      catch { log('Failure log insert failed for queue #' + item.id + '.'); }
       failed += status === 'failed' ? 1 : 0;
       continue;
     }
@@ -190,7 +190,7 @@ export async function processGeneralEmailQueue(): Promise<void> {
         error_message: message
       });
       try { await insertLog(item, 'failed', { attempt, error: message }); }
-      catch (error) { log('Failure log insert failed for queue #' + item.id + ': ' + String(error)); }
+      catch { log('Failure log insert failed for queue #' + item.id + '.'); }
       failed += status === 'failed' ? 1 : 0;
       continue;
     }
@@ -211,7 +211,7 @@ export async function processGeneralEmailQueue(): Promise<void> {
         error_message: message
       });
       try { await insertLog(item, 'failed', { attempt, error: message, ...(statusCode ? { statusCode } : {}) }); }
-      catch (logError) { log('Failure log insert failed for queue #' + item.id + ': ' + String(logError)); }
+      catch { log('Failure log insert failed for queue #' + item.id + '.'); }
       failed += status === 'failed' ? 1 : 0;
       continue;
     }
@@ -222,10 +222,10 @@ export async function processGeneralEmailQueue(): Promise<void> {
     let messageId: string;
     try {
       messageId = (await sendEmail(payload, settings.brevo_api_key)).messageId;
-    } catch (error) {
+    } catch {
       // A timeout or error response does not prove the provider did not accept
       // the message. Never release this claim automatically.
-      log('DELIVERY OUTCOME UNKNOWN for queue #' + item.id + '; manual reconciliation required: ' + String(error));
+      log('DELIVERY OUTCOME UNKNOWN for queue #' + item.id + '; manual reconciliation required.');
       continue;
     }
 
@@ -240,8 +240,8 @@ export async function processGeneralEmailQueue(): Promise<void> {
         brevo_message_id: messageId,
         error_message: null
       }, claimToken);
-    } catch (error) {
-      log('DELIVERY SUCCEEDED but queue update failed for queue #' + item.id + ' (messageId=' + messageId + '); manual reconciliation required: ' + String(error));
+    } catch {
+      log('DELIVERY SUCCEEDED but queue update failed for queue #' + item.id + '; manual reconciliation required.');
       continue;
     }
 
@@ -254,14 +254,14 @@ export async function processGeneralEmailQueue(): Promise<void> {
         p_notification_year: birthdayYear,
         p_channel: item.template_code === 'birthday_personal' ? 'personal' : 'team'
       });
-      if (markerError) log('Delivery succeeded but birthday marker failed for queue #' + item.id + ': ' + markerError.message);
+      if (markerError) log('Delivery succeeded but birthday marker failed for queue #' + item.id + '.');
     }
 
     sent += 1;
     try {
       await insertLog(item, 'sent', { attempt, messageId });
-    } catch (error) {
-      log('DELIVERY SUCCEEDED but send log insert failed for queue #' + item.id + ': ' + String(error));
+    } catch {
+      log('DELIVERY SUCCEEDED but send log insert failed for queue #' + item.id + '.');
     }
   }
 

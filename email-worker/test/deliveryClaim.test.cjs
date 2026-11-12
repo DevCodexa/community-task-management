@@ -6,7 +6,7 @@ const brevoModule = require('../dist/brevo.js');
 const { processEmailQueue } = require('../dist/worker.js');
 const { processGeneralEmailQueue } = require('../dist/generalQueueWorker.js');
 
-function fixture(kind, { failSentUpdate = false, failLog = false, throwLog = false, providerError = false, missingTemplate = false } = {}) {
+function fixture(kind, { failSentUpdate = false, failLog = false, throwLog = false, providerError = false, missingTemplate = false, failureText = '' } = {}) {
   const table = kind === 'general' ? 'email_queue' : 'speaker_email_queue';
   const row = kind === 'general'
     ? { id: 1, recipient_email: 'recipient@example.invalid', recipient_name: 'Ada', template_code: 'test', template_params: { name: 'Ada' }, attempt_count: 0, status: 'pending', delivery_claim_token: null }
@@ -27,7 +27,7 @@ function fixture(kind, { failSentUpdate = false, failLog = false, throwLog = fal
     limit() { return this; }
     update(values) { this.action = 'update'; this.values = values; return this; }
     insert(values) {
-      if (throwLog) throw new Error('log connection lost');
+      if (throwLog) throw new Error(failureText || 'log connection lost');
       this.action = 'insert'; this.values = values; return this;
     }
     matches() { return this.filters.every(([k, v]) => row[k] === v); }
@@ -35,7 +35,7 @@ function fixture(kind, { failSentUpdate = false, failLog = false, throwLog = fal
       if (this.name === 'email_templates') return { data: template, error: null };
       if (this.name === 'email_send_logs') {
         if (this.action === 'insert') {
-          if (failLog) return { data: null, error: { message: 'log unavailable' } };
+          if (failLog) return { data: null, error: { message: failureText || 'log unavailable' } };
           logs.push(this.values);
           return { data: null, error: null };
         }
@@ -44,7 +44,7 @@ function fixture(kind, { failSentUpdate = false, failLog = false, throwLog = fal
       if (this.name !== table) return { data: [], error: null };
       const matches = this.matches();
       if (this.action === 'update' && matches) {
-        if (failSentUpdate && this.values.status === 'sent') return { data: null, error: { message: 'update unavailable' } };
+        if (failSentUpdate && this.values.status === 'sent') return { data: null, error: { message: failureText || 'update unavailable' } };
         Object.assign(row, this.values);
       }
       return { data: single ? (matches ? { id: row.id } : null) : (matches ? [row] : []), error: null };
@@ -61,7 +61,7 @@ function fixture(kind, { failSentUpdate = false, failLog = false, throwLog = fal
     sends++;
     assert.match(payload.headers.idempotencyKey, /^[0-9a-f-]{36}$/);
     await new Promise((resolve) => setTimeout(resolve, 10));
-    if (providerError) throw new Error('connection lost');
+    if (providerError) throw new Error(failureText || 'connection lost');
     return { messageId: 'provider-1' };
   } };
 }
@@ -94,3 +94,52 @@ for (const kind of ['general', 'speaker']) {
     assert.equal(f.row.delivery_claim_token, null);
   });
 }
+
+// Provider and database errors may contain keys, recipient addresses or tokens.
+// Assert that operational logs retain the event and queue ID but no raw details.
+for (const kind of ['general', 'speaker']) {
+  const run = kind === 'general' ? processGeneralEmailQueue : processEmailQueue;
+  for (const failure of ['provider', 'queue', 'log', 'log-throws']) {
+    test(`${kind}: ${failure} operational logs omit untrusted error details`, async (t) => {
+      const sensitive = 'synthetic-secret-key person@example.invalid bearer-token';
+      const f = fixture(kind, { failLog: failure === 'log', throwLog: failure === 'log-throws',
+        failSentUpdate: failure === 'queue', providerError: failure === 'provider', failureText: sensitive });
+      const lines = [];
+      t.mock.method(console, 'log', (...args) => lines.push(args.join(' ')));
+      t.mock.method(clientModule, 'getSupabaseClient', () => f.client);
+      t.mock.method(settingsModule, 'loadEmailSettings', async () => f.settings);
+      t.mock.method(brevoModule, 'sendEmail', f.send);
+      await run();
+      assert.ok(lines.length > 0);
+      assert.ok(lines.every((line) => !line.includes(sensitive) && !line.includes('synthetic-secret-key') &&
+        !line.includes('person@example.invalid') && !line.includes('bearer-token')));
+      assert.ok(lines.some((line) => /queue #/.test(line)), 'queue identifier remains available');
+      if (failure === 'provider') assert.ok(lines.some((line) => /OUTCOME UNKNOWN/.test(line)));
+      if (failure === 'queue') assert.ok(lines.some((line) => /manual reconciliation/.test(line)));
+      if (failure.startsWith('log')) assert.ok(lines.some((line) => /log insert failed/i.test(line)));
+    });
+  }
+}
+
+test('speaker settings failure does not log provider or credential details', async (t) => {
+  const f = fixture('speaker');
+  const lines = [];
+  t.mock.method(console, 'log', (...args) => lines.push(args.join(' ')));
+  t.mock.method(clientModule, 'getSupabaseClient', () => f.client);
+  t.mock.method(settingsModule, 'loadEmailSettings', async () => { throw new Error('synthetic-secret-key person@example.invalid'); });
+  await processEmailQueue();
+  assert.ok(lines.some((line) => /Settings load failed/.test(line)));
+  assert.ok(lines.every((line) => !line.includes('synthetic-secret-key') && !line.includes('person@example.invalid')));
+});
+
+test('birthday enqueue error does not log database-provided details', async (t) => {
+  const f = fixture('general');
+  f.client.rpc = async () => ({ error: { message: 'synthetic-secret-key person@example.invalid' } });
+  const lines = [];
+  t.mock.method(console, 'log', (...args) => lines.push(args.join(' ')));
+  t.mock.method(clientModule, 'getSupabaseClient', () => f.client);
+  t.mock.method(settingsModule, 'loadEmailSettings', async () => ({ ...f.settings, enabled: false }));
+  await processGeneralEmailQueue();
+  assert.ok(lines.some((line) => /Birthday enqueue failed/.test(line)));
+  assert.ok(lines.every((line) => !line.includes('synthetic-secret-key') && !line.includes('person@example.invalid')));
+});

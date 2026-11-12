@@ -155,8 +155,7 @@ async function insertSendLog(params: {
   ]);
 
   if (error) {
-    const detail = [error.message, error.details, error.hint].filter(Boolean).join(' | ');
-    log(`insertSendLog ERROR: ${detail}`);
+    log(`Send-log insert failed for speaker queue #${params.queueId}.`);
     // Logging is best-effort. A log failure after delivery must never trigger a resend.
     return;
   }
@@ -258,8 +257,8 @@ export async function processEmailQueue(): Promise<void> {
   let settings: EmailSettings;
   try {
     settings = await loadEmailSettings();
-  } catch (e: unknown) {
-    log(`Settings load failed: ${(e as Error).message}`);
+  } catch {
+    log('Settings load failed.');
     return;
   }
 
@@ -386,14 +385,14 @@ export async function processEmailQueue(): Promise<void> {
     let messageId: string;
     try {
       messageId = (await sendEmail(payload, settings.brevo_api_key)).messageId;
-    } catch (error) {
-      log(`DELIVERY OUTCOME UNKNOWN for speaker queue #${item.id}; manual reconciliation required: ${String(error)}`);
+    } catch {
+      log(`DELIVERY OUTCOME UNKNOWN for speaker queue #${item.id}; manual reconciliation required.`);
       continue;
     }
     try {
       await markQueueRowSuccess({ supabase, queueId: item.id, claimToken });
-    } catch (error) {
-      log(`DELIVERY SUCCEEDED but queue update failed for speaker queue #${item.id} (messageId=${messageId}); manual reconciliation required: ${String(error)}`);
+    } catch {
+      log(`DELIVERY SUCCEEDED but queue update failed for speaker queue #${item.id}; manual reconciliation required.`);
       continue;
     }
     sentCount += 1;
@@ -402,8 +401,8 @@ export async function processEmailQueue(): Promise<void> {
         supabase, queueId: item.id, recipientEmail, templateCode, eventType: 'sent',
         eventData: { attempt: nextAttemptCount, messageId }
       });
-    } catch (error) {
-      log(`DELIVERY SUCCEEDED but log insert failed for speaker queue #${item.id}: ${String(error)}`);
+    } catch {
+      log(`DELIVERY SUCCEEDED but log insert failed for speaker queue #${item.id}.`);
     }
   }
 
