@@ -39,6 +39,15 @@ const throwError = (error: any): never => {
   throw new Error(notificationError.message);
 };
 
+// Bulk operations must never omit their recipient filter. RLS remains the
+// authoritative access control; this prevents accidental unscoped requests.
+const requireRecipient = (userId: string | undefined): string => {
+  if (typeof userId !== 'string' || !userId.trim()) {
+    throw new Error('Bildirim işlemi için kullanıcı kimliği gerekli.');
+  }
+  return userId.trim();
+};
+
 // -----------------------------------------------------------
 // 2. READ OPERATIONS
 // -----------------------------------------------------------
@@ -197,18 +206,16 @@ export const markAsRead = async (id: string): Promise<FullNotification> => {
 /**
  * Tüm bildirimleri okundu olarak işaretle
  */
-export const markAllAsRead = async (user_id?: string): Promise<number> => {
-  let query = supabase
+export const markAllAsRead = async (user_id: string): Promise<number> => {
+  const recipient = requireRecipient(user_id);
+  const query = supabase
     .from('notifications')
     .update({
       is_read: true,
       read_at: new Date().toISOString(),
-    })
-    .eq('is_read', false);
-
-  if (user_id) {
-    query = query.eq('user_id', user_id);
-  }
+    }, { count: 'exact' })
+    .eq('is_read', false)
+    .eq('user_id', recipient);
 
   const { error, count } = await query;
 
@@ -223,16 +230,19 @@ export const markAllAsRead = async (user_id?: string): Promise<number> => {
  * Bildirim tipine göre okundu işaretle
  */
 export const markNotificationsAsReadByType = async (
-  type: NotificationType
+  type: NotificationType,
+  user_id: string
 ): Promise<number> => {
+  const recipient = requireRecipient(user_id);
   const { error, count } = await supabase
     .from('notifications')
     .update({
       is_read: true,
       read_at: new Date().toISOString(),
-    })
+    }, { count: 'exact' })
     .eq('type', type)
-    .eq('is_read', false);
+    .eq('is_read', false)
+    .eq('user_id', recipient);
 
   if (error) {
     throwError(error);
@@ -267,15 +277,13 @@ export const deleteNotification = async (id: string): Promise<void> => {
 /**
  * Okunmuş tüm bildirimleri sil
  */
-export const clearReadNotifications = async (user_id?: string): Promise<number> => {
-  let query = supabase
+export const clearReadNotifications = async (user_id: string): Promise<number> => {
+  const recipient = requireRecipient(user_id);
+  const query = supabase
     .from('notifications')
-    .delete()
-    .eq('is_read', true);
-
-  if (user_id) {
-    query = query.eq('user_id', user_id);
-  }
+    .delete({ count: 'exact' })
+    .eq('is_read', true)
+    .eq('user_id', recipient);
 
   const { error, count } = await query;
 
@@ -289,12 +297,9 @@ export const clearReadNotifications = async (user_id?: string): Promise<number> 
 /**
  * Tüm bildirimleri sil
  */
-export const clearAllNotifications = async (user_id?: string): Promise<number> => {
-  let query = supabase.from('notifications').delete();
-
-  if (user_id) {
-    query = query.eq('user_id', user_id);
-  }
+export const clearAllNotifications = async (user_id: string): Promise<number> => {
+  const recipient = requireRecipient(user_id);
+  const query = supabase.from('notifications').delete({ count: 'exact' }).eq('user_id', recipient);
 
   const { error, count } = await query;
 
