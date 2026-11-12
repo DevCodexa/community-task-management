@@ -208,8 +208,9 @@ export const updateSpeaker = async (id: string, updateData: Partial<SpeakerFormD
 };
 
 export const deleteSpeaker = async (id: string): Promise<void> => {
-  const { error } = await supabase.from('speakers').delete().eq('id', id);
+  const { data, error } = await supabase.from('speakers').delete().eq('id', id).select('id').maybeSingle();
   if (error) throwError(error);
+  if (!data) throw new Error('Konuşmacı silinemedi veya bulunamadı.');
 };
 
 // -----------------------------------------------------------

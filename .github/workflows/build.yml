@@ -34,6 +34,7 @@ jobs:
       - run: node --test tests/private-community-rls.test.mjs
       - run: node --test tests/self-profile-rls.test.mjs
       - run: node --test tests/self-profile-ui.test.mjs
+      - run: node --test tests/speaker-mutations.test.mjs
 
   email-worker:
     name: Email worker tests and TypeScript build
