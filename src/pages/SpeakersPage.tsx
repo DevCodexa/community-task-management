@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search,
   UserPlus,
@@ -20,6 +20,10 @@ export const SpeakersPage: React.FC = () => {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteInFlight = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<SpeakerFilterTab>('all');
 
@@ -104,19 +108,27 @@ export const SpeakersPage: React.FC = () => {
   const promptDelete = (id: string) => {
     const speaker = speakers.find(s => s.id === id);
     if (speaker) {
+      setSuccess(null);
+      setDeleteError(null);
       setDeleteConfirm({ open: true, speaker });
     }
   };
 
   const confirmDelete = async () => {
-    if (!deleteConfirm.speaker) return;
+    if (!deleteConfirm.speaker || deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setDeleteError(null);
     try {
       await deleteSpeaker(deleteConfirm.speaker.id);
       setDeleteConfirm({ open: false, speaker: null });
-      fetchSpeakers();
-    } catch (err: any) {
-      setError(err.message || 'Silme işlemi başarısız oldu.');
-      setDeleteConfirm({ open: false, speaker: null });
+      setSuccess('Konuşmacı silindi.');
+      await fetchSpeakers();
+    } catch {
+      setDeleteError('Konuşmacı silinemedi veya bulunamadı. Yetkinizi ve bağlantınızı kontrol edip tekrar deneyin.');
+    } finally {
+      deleteInFlight.current = false;
+      setDeleting(false);
     }
   };
 
@@ -188,6 +200,8 @@ export const SpeakersPage: React.FC = () => {
         />
       </div>
 
+      {success && <div role="status" className="mb-6 rounded-lg bg-green-500/10 p-4 text-sm text-green-400">{success}</div>}
+
       {/* Error Banner */}
       {error && (
         <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3">
@@ -235,7 +249,7 @@ export const SpeakersPage: React.FC = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-xl"
-            onClick={() => setDeleteConfirm({ open: false, speaker: null })}
+            onClick={() => { if (!deleteInFlight.current) setDeleteConfirm({ open: false, speaker: null }); }}
           />
           <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-coal-800/90 shadow-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -248,11 +262,13 @@ export const SpeakersPage: React.FC = () => {
               <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
               <p className="text-sm text-red-300/90">
                 <strong className="text-red-400">{deleteConfirm.speaker.full_name}</strong>{' '}
-                isimli konuşmacıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                isimli konuşmacıyı silmek istediğinize emin misiniz? Etkinlik atamaları ve e-posta kuyruk kayıtları da silinir. Bu işlem geri alınamaz.
               </p>
             </div>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-red-300">{deleteError}</p>}
             <div className="flex items-center justify-end gap-3">
               <button
+                disabled={deleting}
                 onClick={() => setDeleteConfirm({ open: false, speaker: null })}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium text-silver-400 hover:text-silver-200 hover:bg-white/[0.05] transition-colors"
               >
@@ -260,9 +276,10 @@ export const SpeakersPage: React.FC = () => {
               </button>
               <button
                 onClick={confirmDelete}
+                disabled={deleting}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:text-red-300 transition-all"
               >
-                Evet, Sil
+                {deleting ? 'Siliniyor…' : 'Evet, Sil'}
               </button>
             </div>
           </div>

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Save,
   UserPlus,
 } from 'lucide-react';
 import { Speaker, SpeakerFormData } from '../../types/speaker';
-import { createSpeaker, updateSpeaker } from '../../lib/supabaseSpeakers';
+import { createSpeaker, updateSpeaker, validateSpeakerData } from '../../lib/supabaseSpeakers';
 
 interface SpeakerModalProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ export const SpeakerModal: React.FC<SpeakerModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<SpeakerFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInFlight = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = !!speaker;
@@ -71,6 +72,13 @@ useEffect(() => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submissionInFlight.current) return;
+    const validation = validateSpeakerData(formData);
+    if (!validation.valid) {
+      setError(validation.errors.join(', '));
+      return;
+    }
+    submissionInFlight.current = true;
     setIsSubmitting(true);
     setError(null);
 
@@ -104,10 +112,10 @@ useEffect(() => {
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
-      console.error('Speaker form error:', err);
-      setError(err.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    } catch {
+      setError('Konuşmacı kaydedilemedi. Yetkinizi ve bağlantınızı kontrol edip tekrar deneyin.');
     } finally {
+      submissionInFlight.current = false;
       setIsSubmitting(false);
     }
   };
@@ -119,7 +127,7 @@ useEffect(() => {
       {/* Glassmorphism Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xl"
-        onClick={onClose}
+        onClick={() => { if (!submissionInFlight.current) onClose(); }}
       />
 
       {/* Modal Card */}
@@ -143,6 +151,7 @@ useEffect(() => {
           </div>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="p-2 rounded-lg text-silver-500 hover:text-silver-200 hover:bg-white/[0.05] transition-colors"
           >
             <X className="h-5 w-5" />
@@ -152,7 +161,7 @@ useEffect(() => {
         {/* Form */}
         <form onSubmit={handleSubmit}>
           {error && (
-            <div className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+            <div role="alert" className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -289,6 +298,7 @@ useEffect(() => {
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="px-4 py-2.5 rounded-lg text-sm font-medium text-silver-400 hover:text-silver-200 hover:bg-white/[0.05] transition-colors"
             >
               İptal
