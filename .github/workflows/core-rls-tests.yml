@@ -20,3 +20,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test tests/core-rls-integration.test.mjs
+      - run: node --test tests/core-table-grants.test.mjs
