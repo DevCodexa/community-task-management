@@ -19,7 +19,6 @@ import {
 import { LinkFormModal } from '../components/links/LinkFormModal';
 
 export const LinksPage: React.FC = () => {
-  const [links, setLinks] = useState<UsefulLink[]>([]);
   const [groupedLinks, setGroupedLinks] = useState<GroupedLinks[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,7 +36,6 @@ export const LinksPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await getAllUsefulLinks();
-      setLinks(data);
       setGroupedLinks(groupLinksByCategory(data));
       setError('');
     } catch (err: any) {
@@ -70,10 +68,6 @@ export const LinksPage: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'Link silinemedi');
     }
-  };
-
-  const openLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const toggleCategory = (category: string) => {

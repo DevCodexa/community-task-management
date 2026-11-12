@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   AlertTriangle,
@@ -40,6 +40,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const { isIceBlue } = useTheme()
   const [formData, setFormData] = useState<MemberFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInFlight = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = !!member;
@@ -85,6 +86,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submissionInFlight.current) return;
+    submissionInFlight.current = true;
     setIsSubmitting(true);
     setError(null);
 
@@ -105,9 +108,13 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      setError(message.startsWith('Validasyon hatası:') || message === 'Bu email adresi ile kayıtlı bir üye zaten var'
+        ? message
+        : 'Üye kaydedilemedi. Yetkinizi ve bağlantınızı kontrol edip tekrar deneyin.');
     } finally {
+      submissionInFlight.current = false;
       setIsSubmitting(false);
     }
   };
@@ -120,7 +127,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       {/* Glassmorphism Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xl"
-        onClick={onClose}
+        onClick={() => { if (!submissionInFlight.current) onClose(); }}
       />
 
 {/* Modal Card */}
@@ -158,6 +165,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className={`p-2 rounded-lg transition-colors ${
               isIceBlue 
                 ? 'text-slate-500 hover:text-slate-800 hover:bg-iceBlue-50' 
@@ -188,7 +196,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit}>
           {error && (
-          <div className="mx-6 mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+          <div role="alert" className="mx-6 mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {error}
             </div>
 
@@ -203,6 +211,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="px-4 py-2.5 rounded-lg text-sm font-medium text-silver-400 hover:text-silver-200 hover:bg-white/[0.05] transition-colors"
             >
               İptal

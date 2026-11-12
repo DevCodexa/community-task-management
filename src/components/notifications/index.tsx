@@ -3,11 +3,13 @@
    =========================================================== */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 import { NavbarBell } from './NavbarBell';
 import { NotificationDropdown } from './NotificationDropdown';
 import { NotificationDetailModal } from './NotificationDetailModal';
 import { FullNotification } from '../../types/notification';
+import { useUserProfile } from '../../context/UserProfileContext';
 
 /**
  * NotificationContainer
@@ -18,6 +20,8 @@ import { FullNotification } from '../../types/notification';
  * - NotificationDetailModal: Bildirim detay modalı
  */
 export const NotificationContainer: React.FC = () => {
+  const navigate = useNavigate();
+  const { profile } = useUserProfile();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<FullNotification | null>(null);
   
@@ -31,7 +35,7 @@ export const NotificationContainer: React.FC = () => {
     removeNotification,
   } = useNotifications({
     enableRealtime: true,
-    checkBirthdays: true,
+    user_id: profile?.id || undefined,
   });
 
   // Handle notification click - open detail modal
@@ -96,6 +100,7 @@ export const NotificationContainer: React.FC = () => {
           onNotificationClick={handleNotificationClick}
           onMarkAllRead={markAllAsRead}
           onDelete={removeNotification}
+          onViewAll={() => { setIsDropdownOpen(false); navigate('/bildirimler'); }}
           isLoading={isLoading}
         />
       </div>

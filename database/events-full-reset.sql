@@ -1,6 +1,8 @@
+-- HISTORICAL DESTRUCTIVE RESET: DO NOT RUN ON A LIVE DATABASE.
+-- The reviewed migrations define the current RLS policies.
 -- ============================================================
 -- FINAL Events Table Full Reset + Security Fix
--- Run this SINGLE script in Supabase SQL Editor
+-- Historical reference only; this script destroys existing data.
 -- Fixes schema cache + RLS + enum issues completely
 -- ============================================================
 
@@ -41,15 +43,12 @@ CREATE INDEX CONCURRENTLY idx_events_title ON events(title);
 CREATE INDEX CONCURRENTLY idx_event_staff_event_id ON event_staff(event_id);
 CREATE INDEX CONCURRENTLY idx_event_staff_member_id ON event_staff(member_id);
 
--- 5. RLS + Policies (ENABLED with permissive policies)
+-- 5. RLS enabled; reviewed versioned policies must be applied separately
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_staff ENABLE ROW LEVEL SECURITY;
 
--- Policies for authenticated users (full access)
-CREATE POLICY "Events: Auth insert" ON events FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Events: Auth full access" ON events FOR ALL TO authenticated USING (true);
+-- No broad access policies: the reviewed migrations own the policy contract.
 
-CREATE POLICY "EventStaff: Auth full access" ON event_staff FOR ALL TO authenticated USING (true);
 
 -- 6. Trigger
 CREATE OR REPLACE FUNCTION update_events_updated_at()
@@ -69,6 +68,5 @@ CREATE TRIGGER update_events_updated_at
 
 -- 8. Clear Supabase cache (automatic after ~1min, or restart app)
 
--- ✅ RUN THIS FULL SCRIPT. Event creation will work immediately.
--- Test: Create new event → success.
+-- Historical reference only. See the setup and migration guide.
 

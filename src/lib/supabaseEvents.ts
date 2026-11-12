@@ -259,20 +259,11 @@ export const updateEvent = async (id: string, updateData: EventUpdateData): Prom
 };
 
 export const deleteEvent = async (id: string): Promise<void> => {
-  const event = await getEventById(id);
-  if (!event) throw new Error('Etkinlik bulunamadı');
-
-  // Önce görevlileri sil (cascade olacak ama explicit yapalım)
-  const { error: staffError } = await supabase
-    .from('event_staff')
-    .delete()
-    .eq('event_id', id);
-  
-  if (staffError) throwError(staffError);
-
-  // Sonra etkinliği sil
-  const { error } = await supabase.from('events').delete().eq('id', id);
+  // Event staff and speaker assignments are deleted by their foreign keys,
+  // in the same database transaction as the event.
+  const { data, error } = await supabase.from('events').delete().eq('id', id).select('id').maybeSingle();
   if (error) throwError(error);
+  if (!data) throw new Error('Etkinlik silinemedi veya bulunamadı.');
 };
 
 // -----------------------------------------------------------
@@ -297,13 +288,14 @@ export const addStaffToEvent = async (eventId: string, memberId: string): Promis
   if (memberError || !member) throw new Error('Üye bulunamadı');
 
   // Zaten görevli mi kontrol et
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('event_staff')
     .select('id')
     .eq('event_id', eventId)
     .eq('member_id', memberId)
-    .single();
-  
+    .maybeSingle();
+
+  if (existingError) throwError(existingError);
   if (existing) throw new Error('Bu üye zaten etkinlikte görevli');
 
   const { data, error } = await supabase
@@ -314,10 +306,7 @@ export const addStaffToEvent = async (eventId: string, memberId: string): Promis
 
   if (error) throwError(error);
 
-  // Send email notification to staff member (fire-and-forget - don't await)
-  sendEventStaffEmailNotification(eventId, memberId).catch(err => {
-    console.warn('Email notification failed:', err);
-  });
+  // The database's event_staff INSERT trigger enqueues the email when configured.
 
   return data;
 };

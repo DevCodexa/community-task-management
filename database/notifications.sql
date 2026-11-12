@@ -1,3 +1,11 @@
+-- Historical notification setup is intentionally disabled.
+-- It creates permissive anonymous policies and obsolete global notification triggers.
+-- Use reviewed versioned migrations; do not execute fragments of this file.
+BEGIN;
+DO $legacy_guard$ BEGIN
+  RAISE EXCEPTION 'Historical notifications.sql is disabled; use reviewed versioned migrations';
+END; $legacy_guard$;
+
 -- ============================================================
 -- Supabase Notifications Table - Zincir Atarlı Task Management
 -- ============================================================
@@ -305,3 +313,5 @@ values (
 -- ============================================================
 -- END OF NOTIFICATIONS SCRIPT
 -- ============================================================
+
+ROLLBACK;

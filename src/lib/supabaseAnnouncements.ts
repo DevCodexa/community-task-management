@@ -223,7 +223,8 @@ export const updateAnnouncement = async (id: string, update: AnnouncementUpdateD
 
 export const deleteAnnouncement = async (id: string): Promise<void> => {
   // cascade will delete announcement_members
-  const { error } = await supabase.from('announcements').delete().eq('id', id);
+  const { data, error } = await supabase.from('announcements').delete().eq('id', id).select('id').maybeSingle();
   if (error) throwError(error);
+  if (!data) throw new Error('Duyuru silinemedi veya bulunamadı. Yetkinizi kontrol edip tekrar deneyin.');
 };
 

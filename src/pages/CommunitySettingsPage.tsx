@@ -2,9 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Plus, Edit3, Save, EyeOff } from 'lucide-react'
 
 import {
-  CommunitySettings,
   MenuItem,
-  defaultCommunitySettings,
   getMenuItems,
   getCommunitySettings,
   upsertCommunitySettings,
@@ -37,7 +35,6 @@ const iconOptions: Array<{ key: string; label: string }> = [
 
 export const CommunitySettingsPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
-  const [settings, setSettings] = useState<CommunitySettings>(defaultCommunitySettings)
   const [menuItems, setMenuItemsState] = useState<MenuItem[]>([])
 
   // sidebar header form
@@ -71,7 +68,6 @@ export const CommunitySettingsPage: React.FC = () => {
       setLoading(true)
       try {
         const [s, items] = await Promise.all([getCommunitySettings(), getMenuItems()])
-        setSettings(s)
         setLogoUrl(s.logo_url || '')
         setAppName(s.app_name || '')
         setAppSubtitle(s.app_subtitle || '')
@@ -93,16 +89,6 @@ export const CommunitySettingsPage: React.FC = () => {
       dashboard_title: dashboardTitle.trim(),
       dashboard_subtitle: dashboardSubtitle.trim(),
     })
-
-    // lightweight immediate UI feedback
-    setSettings((prev) => ({
-      ...prev,
-      logo_url: logoUrl.trim(),
-      app_name: appName.trim(),
-      app_subtitle: appSubtitle.trim(),
-      dashboard_title: dashboardTitle.trim(),
-      dashboard_subtitle: dashboardSubtitle.trim(),
-    }))
   }
 
   const startEditMenu = (item: MenuItem) => {

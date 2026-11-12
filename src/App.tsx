@@ -16,8 +16,9 @@ import { DepartmentsPage } from './pages/DepartmentsPage'
 import { AreasPage } from './pages/AreasPage'
 
 import { ProjectsPage } from './pages/ProjectsPage'
-import ProfilePage from './pages/ProfilePage'
+import ProfilePage, { LegacyProfileLink } from './pages/ProfilePage'
 import { CommunitySettingsPage } from './pages/CommunitySettingsPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 
 function App() {
 
@@ -31,6 +32,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginScreen />} />
             <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+            <Route path="/bildirimler" element={<Layout><NotificationsPage /></Layout>} />
             <Route path="/uyeler" element={<Layout><MembersPage /></Layout>} />
 
             <Route path="/organizasyon/bolumler" element={<Layout><DepartmentsPage /></Layout>} />
@@ -43,7 +45,8 @@ function App() {
             <Route path="/konusmacilar" element={<Layout><SpeakersPage /></Layout>} />
             <Route path="/etkinlikler" element={<Layout><EventsPage /></Layout>} />
             <Route path="/duyurular" element={<Layout><AnnouncementsPage /></Layout>} />
-            <Route path="/profile/:token" element={<ProfilePage />} />
+            <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
+            <Route path="/profile/:token" element={<LegacyProfileLink />} />
             <Route path="/topluluk-ayarlar" element={<Layout><CommunitySettingsPage /></Layout>} />
             <Route path="/ayarlar" element={<Layout><Dashboard /></Layout>} />
 

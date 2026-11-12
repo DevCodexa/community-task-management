@@ -1,4 +1,4 @@
-import React, { useState, useEffect, } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -35,6 +35,9 @@ export const KanbanBoard: React.FC = () => {
   const [tasks, setTasks] = useState<FullTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteInFlight = useRef(false);
   const [columns, setColumns] = useState<Record<TaskStatus, FullTask[]>>({} as any);
   const [selectedTask, setSelectedTask] = useState<FullTask | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -102,12 +105,18 @@ const handleEditTask = (task: FullTask) => {
   };
 
   const handleDeleteTask = async (id: string) => {
-    if (!window.confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+    if (deleteInFlight.current || !window.confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setMutationError(null);
     try {
       await supabaseDeleteTask(id);
       await fetchTasks();
     } catch (error) {
-      console.error('Silme başarısız:', error);
+      setMutationError(error instanceof Error ? error.message : 'Görev silinemedi. Lütfen tekrar deneyin.');
+    } finally {
+      deleteInFlight.current = false;
+      setDeleting(false);
     }
   };
 
@@ -210,6 +219,7 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
 
   return (
     <>
+      {mutationError && <p role="alert" className="mb-4 text-sm text-red-400">{mutationError}</p>}
       <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-white/20">
         {COLUMNS.map((column) => {
           const colTasks = columns[column.id] || [];
@@ -259,7 +269,7 @@ const onDrop = async (e: React.DragEvent<HTMLDivElement>, columnId: TaskStatus) 
       <button onClick={() => handleEditTask(task)} className="p-1 hover:bg-white/10 rounded text-silver-400 hover:text-white" title="Düzenle">
         <Edit3 className="h-3.5 w-3.5" />
       </button>
-      <button onClick={() => handleDeleteTask(task.id)} className="p-1 hover:bg-white/10 rounded text-red-400 hover:text-red-300" title="Sil">
+      <button disabled={deleting} onClick={() => void handleDeleteTask(task.id)} className="p-1 hover:bg-white/10 rounded text-red-400 hover:text-red-300" title="Sil">
         <Trash2 className="h-3.5 w-3.5" />
       </button>
     </div>

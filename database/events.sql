@@ -1,7 +1,7 @@
 -- ============================================================
 -- Supabase Events Table - Etkinlik Yönetim Sistemi
 -- ============================================================
--- Run this in your Supabase SQL Editor
+-- Historical schema reference; use reviewed migrations for current policy.
 
 -- -----------------------------------------------------------
 -- 1. ENUM TYPES
@@ -96,10 +96,10 @@ create index if not exists idx_event_speakers_speaker_id on event_speakers(speak
 -- 4. ROW LEVEL SECURITY (RLS)
 -- -----------------------------------------------------------
 
--- Üç tablo için RLS'i devre dışı bırak
-alter table events disable row level security;
-alter table event_staff disable row level security;
-alter table event_speakers disable row level security;
+-- RLS stays enabled; apply the reviewed versioned policies separately
+alter table events enable row level security;
+alter table event_staff enable row level security;
+alter table event_speakers enable row level security;
 
 
 -- -----------------------------------------------------------

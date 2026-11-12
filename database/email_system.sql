@@ -1,3 +1,14 @@
+-- HISTORICAL REFERENCE ONLY: this is not a supported migration or baseline.
+-- It contains obsolete functions and triggers that can undo later fixes.
+-- The transaction and exception intentionally prevent accidental execution.
+-- See docs/DATABASE_MIGRATIONS.md before changing database schemas.
+BEGIN;
+DO $legacy_guard$
+BEGIN
+  RAISE EXCEPTION 'Historical email_system.sql is disabled; use reviewed versioned migrations';
+END;
+$legacy_guard$;
+
 -- ============================================================
 -- Email System (Brevo-friendly) + Birthday Cron Idempotency
 -- ============================================================
@@ -158,16 +169,15 @@ execute function email_settings_set_updated_at();
 
 -- Seed settings (idempotent)
 insert into email_settings (setting_key, setting_value)
-select 'brevo_api_key', ${SENDINBLUE_API_KEY}
-
+select 'brevo_api_key', NULL::text
 where not exists (select 1 from email_settings where setting_key = 'brevo_api_key');
 
 insert into email_settings (setting_key, setting_value)
-select 'sender_email', 'shiftdeveloperglobalhub@proton.me'
+select 'sender_email', ''
 where not exists (select 1 from email_settings where setting_key = 'sender_email');
 
 insert into email_settings (setting_key, setting_value)
-select 'sender_name', 'Uygulama Adı'
+select 'sender_name', ''
 where not exists (select 1 from email_settings where setting_key = 'sender_name');
 
 insert into email_settings (setting_key, setting_value)
@@ -179,7 +189,7 @@ select 'retry_limit', '3'
 where not exists (select 1 from email_settings where setting_key = 'retry_limit');
 
 insert into email_settings (setting_key, setting_value)
-select 'enabled', 'true'
+select 'enabled', 'false'
 where not exists (select 1 from email_settings where setting_key = 'enabled');
 
 -- ------------------------------------------------------------
@@ -204,59 +214,44 @@ create table if not exists birthday_notifications (
   unique (birthday_person_id, notification_year)
 );
 
--- ------------------------------------------------------------
--- RLS (follow repository style: allow anon true)
--- ------------------------------------------------------------
--- email_templates
-alter table email_templates enable row level security;
-create policy "Allow anon to read email_templates"
-  on email_templates for select
-  to anon using (true);
+-- Backend-only access; do not recreate the old anonymous policies.
+ALTER TABLE public.email_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon to read email_templates" ON public.email_templates;
+ALTER TABLE public.email_queue ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon to read email_queue" ON public.email_queue;
+DROP POLICY IF EXISTS "Allow anon to insert email_queue" ON public.email_queue;
+DROP POLICY IF EXISTS "Allow anon to update email_queue" ON public.email_queue;
+ALTER TABLE public.email_send_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon to read email_send_logs" ON public.email_send_logs;
+DROP POLICY IF EXISTS "Allow anon to insert email_send_logs" ON public.email_send_logs;
+ALTER TABLE public.email_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon to read email_settings" ON public.email_settings;
+DROP POLICY IF EXISTS "Allow anon to insert email_settings" ON public.email_settings;
+DROP POLICY IF EXISTS "Allow anon to update email_settings" ON public.email_settings;
+ALTER TABLE public.birthday_notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon to read birthday_notifications" ON public.birthday_notifications;
+DROP POLICY IF EXISTS "Allow anon to insert birthday_notifications" ON public.birthday_notifications;
+DROP POLICY IF EXISTS "Allow anon to update birthday_notifications" ON public.birthday_notifications;
 
--- email_queue (provider worker will need access; keep anon open if that's your dev pattern)
-alter table email_queue enable row level security;
-create policy "Allow anon to read email_queue"
-  on email_queue for select
-  to anon using (true);
-create policy "Allow anon to insert email_queue"
-  on email_queue for insert
-  to anon with check (true);
-create policy "Allow anon to update email_queue"
-  on email_queue for update
-  to anon using (true) with check (true);
+REVOKE ALL PRIVILEGES ON TABLE
+  public.email_templates, public.email_queue, public.email_send_logs,
+  public.email_settings, public.birthday_notifications
+FROM PUBLIC, anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE
+  public.email_templates, public.email_queue, public.email_send_logs,
+  public.email_settings, public.birthday_notifications
+TO service_role;
 
--- email_send_logs
-alter table email_send_logs enable row level security;
-create policy "Allow anon to read email_send_logs"
-  on email_send_logs for select
-  to anon using (true);
-create policy "Allow anon to insert email_send_logs"
-  on email_send_logs for insert
-  to anon with check (true);
-
--- email_settings
-alter table email_settings enable row level security;
-create policy "Allow anon to read email_settings"
-  on email_settings for select
-  to anon using (true);
-create policy "Allow anon to insert email_settings"
-  on email_settings for insert
-  to anon with check (true);
-create policy "Allow anon to update email_settings"
-  on email_settings for update
-  to anon using (true) with check (true);
-
--- birthday_notifications
-alter table birthday_notifications enable row level security;
-create policy "Allow anon to read birthday_notifications"
-  on birthday_notifications for select
-  to anon using (true);
-create policy "Allow anon to insert birthday_notifications"
-  on birthday_notifications for insert
-  to anon with check (true);
-create policy "Allow anon to update birthday_notifications"
-  on birthday_notifications for update
-  to anon using (true) with check (true);
+REVOKE ALL PRIVILEGES ON SEQUENCE
+  public.email_templates_id_seq, public.email_queue_id_seq,
+  public.email_send_logs_id_seq, public.email_settings_id_seq,
+  public.birthday_notifications_id_seq
+FROM PUBLIC, anon, authenticated;
+GRANT ALL PRIVILEGES ON SEQUENCE
+  public.email_templates_id_seq, public.email_queue_id_seq,
+  public.email_send_logs_id_seq, public.email_settings_id_seq,
+  public.birthday_notifications_id_seq
+TO service_role;
 
 -- ------------------------------------------------------------
 -- 6) Seed templates (idempotent)
@@ -699,3 +694,6 @@ $$ language plpgsql security definer;
 -- ============================================================
 -- END OF EMAIL SYSTEM SCRIPT
 -- ============================================================
+
+-- Never commit changes from the disabled historical script.
+ROLLBACK;

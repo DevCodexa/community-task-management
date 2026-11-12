@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Calendar, LayoutList, Trash2, X } from 'lucide-react';
 import { EventTable } from '../components/events';
 import { EventFormModal } from '../components/events';
@@ -44,6 +44,9 @@ export const EventsPage: React.FC = () => {
   const [staffForEvent, setStaffForEvent] = useState<any[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteInFlight = useRef(false);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -90,11 +93,19 @@ export const EventsPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setDeleteError(null);
     try {
       await deleteEvent(id);
-      fetchEvents();
+      setDeleteConfirm(null);
+      await fetchEvents();
     } catch (error) {
-      console.error('Silme başarısız:', error);
+      setDeleteError(error instanceof Error ? error.message : 'Etkinlik silinemedi. Lütfen tekrar deneyin.');
+    } finally {
+      deleteInFlight.current = false;
+      setDeleting(false);
     }
   };
 
@@ -183,7 +194,7 @@ export const EventsPage: React.FC = () => {
             <EventTable
               events={filteredEvents}
               onEdit={handleEdit}
-              onDelete={(id) => setDeleteConfirm(id)}
+              onDelete={(id) => { setDeleteError(null); setDeleteConfirm(id); }}
               onView={handleView}
               loading={loading}
             />
@@ -344,7 +355,7 @@ export const EventsPage: React.FC = () => {
       {/* Delete Confirm */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setDeleteConfirm(null)} />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => { if (!deleting) setDeleteConfirm(null); }} />
           <div className="relative w-full max-w-sm bg-coal-900/95 border border-white/10 rounded-2xl p-6 shadow-3xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
@@ -352,22 +363,22 @@ export const EventsPage: React.FC = () => {
               </div>
               <h3 className="text-lg font-bold text-white">Etkinlik Sil</h3>
             </div>
-            <p className="text-silver-300 mb-6">Bu etkinlik ve görevli atamaları silinecek. Geri alınamaz.</p>
+            <p className="text-silver-300 mb-6">Bu etkinlik ile görevli ve konuşmacı atamaları silinecek. Geri alınamaz.</p>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-red-400">{deleteError}</p>}
             <div className="flex gap-3">
               <button
+                disabled={deleting}
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-white/20 text-silver-400 hover:bg-white/10 transition-all text-sm font-medium"
               >
                 İptal
               </button>
               <button
-                onClick={() => {
-                  handleDelete(deleteConfirm);
-                  setDeleteConfirm(null);
-                }}
+                disabled={deleting}
+                onClick={() => void handleDelete(deleteConfirm)}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/90 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all text-sm font-semibold"
               >
-                Sil
+                {deleting ? 'Siliniyor…' : 'Sil'}
               </button>
             </div>
           </div>

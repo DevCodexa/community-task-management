@@ -1,37 +1,53 @@
 import 'dotenv/config';
 import cron from 'node-cron';
 import { processEmailQueue } from './worker';
+import { processGeneralEmailQueue } from './generalQueueWorker';
 
 function logRaw(message: string): void {
-  // eslint-disable-next-line no-console
-  console.log(`[EmailWorker] ${message}`);
+  console.log('[EmailWorker] ' + message);
 }
 
-process.on('unhandledRejection', (reason: unknown) => {
-  const msg = reason instanceof Error ? reason.message : String(reason);
-  logRaw(`unhandledRejection: ${msg}`);
+process.on('unhandledRejection', () => {
+  logRaw('Unhandled rejection; inspect worker state.');
 });
 
-process.on('uncaughtException', (err: Error) => {
-  logRaw(`uncaughtException: ${err.message}`);
+process.on('uncaughtException', () => {
+  logRaw('Uncaught exception; inspect worker state.');
 });
 
-async function start(): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log('[EmailWorker] Servis başlatıldı. Cron: her 5 dakikada bir.');
+let processing = false;
 
-  // Start immediately
-  await processEmailQueue();
-
-  cron.schedule('*/5 * * * *', async () => {
+async function processAllQueues(): Promise<void> {
+  if (processing) {
+    logRaw('Previous queue cycle is still running; overlapping cycle skipped.');
+    return;
+  }
+  processing = true;
+  try {
+    // Keep speaker queue failures isolated from general transactional mail.
     try {
       await processEmailQueue();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      logRaw(`processEmailQueue error: ${msg}`);
+    } catch {
+      logRaw('Speaker queue cycle failed.');
     }
+
+    try {
+      await processGeneralEmailQueue();
+    } catch {
+      logRaw('General queue cycle failed.');
+    }
+  } finally {
+    processing = false;
+  }
+}
+
+async function start(): Promise<void> {
+  console.log('[EmailWorker] Servis başlatıldı. Cron: her 5 dakikada bir.');
+  await processAllQueues();
+
+  cron.schedule('*/5 * * * *', async () => {
+    await processAllQueues();
   });
 }
 
 void start();
-

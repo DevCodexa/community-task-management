@@ -268,14 +268,14 @@ Realtime subscriptions allow new notifications to appear without requiring users
 
 # Personal Member Profiles
 
-The application also includes a token-based member profile experience.
+The application includes an authenticated, read-only member profile.
 
-Members can access a dedicated read-only profile page through a generated profile link.
+Members can access their own profile after signing in.
 
 Example:
 
 ```text
-/profile/<token>
+/profile
 ```
 
 The profile can contain information such as:
@@ -284,13 +284,12 @@ The profile can contain information such as:
 * Assigned tasks
 * Organizational relationships
 * Department information
-* Announcements
-* Attachments
-* Event-related information
+* Announcement and attachment placeholders (not populated by the current RPC)
 
 The purpose of this feature is to provide each community member with a dedicated view of the information and work relevant to them.
 
-The member-facing experience is still an active area of development and can evolve into a richer personal workspace.
+Historical token links are retired and cannot be used for profile access. The authenticated
+profile RPC migration must be deployed before releasing the corresponding frontend.
 
 ---
 
@@ -389,7 +388,7 @@ The main application routes include:
 | `/konusmacilar`                       | Speakers           | Speaker management                 |
 | `/etkinlikler`                        | Events             | Event management                   |
 | `/duyurular`                          | Announcements      | Community announcements            |
-| `/profile/:token`                     | Member Profile     | Token-based read-only profile      |
+| `/profile`                            | Member Profile     | Authenticated member's own profile |
 | `/topluluk-ayarlar`                   | Community Settings | Community configuration            |
 
 ---
@@ -547,7 +546,7 @@ Logical database areas include:
 * Email templates
 * Email queues
 
-Some SQL files in the repository are corrective, reset, or historical variants. A future cleanup can consolidate these into a clearer migration strategy.
+Some SQL files are corrective, destructive reset scripts, or historical variants. They are not an ordered bootstrap. See the [setup and operations guide](docs/OPERATIONS.md) before applying any database script.
 
 ---
 
@@ -567,17 +566,35 @@ For production usage, application authentication and database-level Row Level Se
 
 ## Requirements
 
-* Node.js
+* Node.js 20 or newer for the frontend (CI uses 20; the optional worker uses 24)
 * npm
 * Supabase project
 
 ## Installation
 
 ```bash
-git clone https://github.com/DevCodexa/community-task-management.git
+git clone https://github.com/codelovingcat/community-task-management.git
 cd community-task-management
-npm install
+npm ci
 ```
+
+Create a local environment file from the example and fill in your own Supabase project values.
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+macOS/Linux:
+
+```bash
+cp .env.example .env.local
+```
+
+Required values are `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The app now stops with a clear configuration error if either is missing; it never falls back to the production project. Use only a browser-safe publishable/anon key in a `VITE_` variable. **Never put a Supabase service-role or secret key in frontend environment variables.**
+
+Configure the variables explicitly for each Vercel environment as well. Use a separate Supabase project for previews if they need isolated data; do not copy production values into Preview unless production data access is intentional.
 
 ## Start Development Server
 
@@ -615,9 +632,12 @@ VITE_SUPABASE_ANON_KEY=
 VITE_APP_URL=
 ```
 
-Additional email-related configuration depends on the deployed email infrastructure.
+`VITE_APP_URL` is currently reserved in the example file; the frontend does not read it. Additional email-related configuration depends on the deployed email infrastructure.
 
 Secrets and service credentials should be provided through environment variables or secure secret storage rather than committed to source control.
+
+For environment isolation, deployment checks, migration precautions, recovery and
+troubleshooting, see the [setup and operations guide](docs/OPERATIONS.md).
 
 ---
 

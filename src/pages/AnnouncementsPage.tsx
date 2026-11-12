@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus,
   Search,
@@ -45,6 +45,10 @@ export const AnnouncementsPage: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [success, setSuccess] = useState('');
+  const deleteInFlight = useRef(false);
 
   const load = async () => {
     setLoading(true);
@@ -101,14 +105,28 @@ export const AnnouncementsPage: React.FC = () => {
     setIsDetailsOpen(true);
   };
 
+  const requestDelete = (id: string) => {
+    setDeleteError('');
+    setSuccess('');
+    setDeleteConfirmId(id);
+  };
+
   const handleDelete = async (id: string) => {
+    if (deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setDeleteError('');
     try {
       await deleteAnnouncement(id);
       setDeleteConfirmId(null);
+      setSuccess('Duyuru silindi.');
       setPage(1);
       await load();
-    } catch (e: any) {
-      setError(e?.message || 'Silme başarısız');
+    } catch {
+      setDeleteError('Duyuru silinemedi veya bulunamadı. Yetkinizi ve bağlantınızı kontrol edip tekrar deneyin.');
+    } finally {
+      deleteInFlight.current = false;
+      setDeleting(false);
     }
   };
 
@@ -158,6 +176,8 @@ export const AnnouncementsPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {success && <div role="status" className="mb-6 rounded-xl bg-green-500/10 p-4 text-sm text-green-400">{success}</div>}
 
       {/* Error */}
       {error && (
@@ -245,7 +265,7 @@ export const AnnouncementsPage: React.FC = () => {
                   key={a.id}
                   announcement={a}
                   onEdit={handleEdit}
-                  onDelete={(id) => setDeleteConfirmId(id)}
+                  onDelete={requestDelete}
                   onView={handleView}
                 />
               ))}
@@ -258,7 +278,7 @@ export const AnnouncementsPage: React.FC = () => {
             <AnnouncementTable
               announcements={items}
               onEdit={handleEdit}
-              onDelete={(id) => setDeleteConfirmId(id)}
+              onDelete={requestDelete}
               onView={handleView}
               loading={loading}
             />
@@ -313,7 +333,7 @@ export const AnnouncementsPage: React.FC = () => {
       {/* Delete Confirm */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setDeleteConfirmId(null)} />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => { if (!deleteInFlight.current) setDeleteConfirmId(null); }} />
           <div className="relative w-full max-w-sm bg-coal-900/95 border border-white/10 rounded-2xl p-6 shadow-3xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
@@ -322,18 +342,21 @@ export const AnnouncementsPage: React.FC = () => {
               <h3 className="text-lg font-bold text-white">Duyuru Sil</h3>
             </div>
             <p className="text-silver-300 mb-6">Bu duyuruyu silmek istediğinize emin misiniz? Geri alınamaz.</p>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-red-300">{deleteError}</p>}
             <div className="flex gap-3">
               <button
+                disabled={deleting}
                 onClick={() => setDeleteConfirmId(null)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-white/20 text-silver-400 hover:bg-white/10 transition-all text-sm font-medium"
               >
                 İptal
               </button>
               <button
+                disabled={deleting}
                 onClick={() => handleDelete(deleteConfirmId)}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/90 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all text-sm font-semibold"
               >
-                Sil
+                {deleting ? 'Siliniyor…' : 'Sil'}
               </button>
             </div>
           </div>

@@ -20,7 +20,7 @@ const shakeAnimation = {
   rotate: [0, -10, 10, -10, 10, -5, 5, 0],
   transition: {
     duration: 0.5,
-    ease: 'easeInOut',
+    ease: 'easeInOut' as const,
   },
 };
 

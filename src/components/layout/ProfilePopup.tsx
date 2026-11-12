@@ -151,6 +151,14 @@ export const ProfilePopup: React.FC<ProfilePopupProps> = ({ onClose }) => {
 
       {/* Actions */}
       <div className="p-2">
+        <button
+          onClick={() => { onClose(); navigate('/profile'); }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] hover:bg-white/[0.04] transition-colors"
+        >
+          <User className="h-4 w-4" />
+          <span>Profilim</span>
+        </button>
+
         {/* Settings Button */}
         <button
           onClick={() => {

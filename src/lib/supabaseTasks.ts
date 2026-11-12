@@ -4,11 +4,6 @@
 
 import { supabase } from './supabase';
 import {
-  canTakeTask,
-  incrementActiveTasks,
-  decrementActiveTasks,
-} from './supabaseMembers';
-import {
   FullTask,
   TaskFormData,
   TaskError,
@@ -180,11 +175,6 @@ export const createTask = async (taskData: TaskFormData): Promise<FullTask> => {
     assignee_id: taskData.assignee_id === '' ? null : taskData.assignee_id
   };
 
-  if (normalizedData.assignee_id) {
-    const canAssign = await canTakeTask(normalizedData.assignee_id as string);
-    if (!canAssign) throw new Error('Üye görev limiti dolu (max 3 aktif)');
-  }
-
   const { data, error } = await supabase.from('tasks').insert([{
     ...normalizedData,
     status: normalizedData.status || 'backlog',
@@ -192,10 +182,6 @@ export const createTask = async (taskData: TaskFormData): Promise<FullTask> => {
   }]).select().single();
 
   if (error) throwError(error);
-
-  if (data.assignee_id && isActiveStatus(data.status)) {
-    await incrementActiveTasks(data.assignee_id);
-  }
 
   return data;
 };
@@ -207,27 +193,6 @@ export const updateTask = async (id: string, updateData: any): Promise<FullTask>
     assignee_id: updateData.assignee_id === '' ? null : updateData.assignee_id
   };
 
-  const currentTask = await getTaskById(id);
-  if (!currentTask) throw new Error('Görev bulunamadı');
-
-  // assignee_id değiştiyse (özellikle yeni kullanıcıya) mail tetikle
-  const assigneeChanged = normalizedData.assignee_id !== undefined && normalizedData.assignee_id !== currentTask.assignee_id;
-
-  // Limit ve aktiflik mantığı kontrolü
-
-  if (normalizedData.status && normalizedData.status !== currentTask.status) {
-      const assigneeId = normalizedData.assignee_id || currentTask.assignee_id;
-      if (assigneeId) {
-          if (isActiveStatus(currentTask.status) && !isActiveStatus(normalizedData.status)) {
-              await decrementActiveTasks(assigneeId as string);
-          } else if (!isActiveStatus(currentTask.status) && isActiveStatus(normalizedData.status)) {
-              const canAssign = await canTakeTask(assigneeId as string);
-              if (!canAssign) throw new Error('Üye görev limiti dolu');
-              await incrementActiveTasks(assigneeId as string);
-          }
-      }
-  }
-
   const { data, error } = await supabase.from('tasks').update(normalizedData).eq('id', id).select().single();
   if (error) throwError(error);
   return data;
@@ -235,12 +200,9 @@ export const updateTask = async (id: string, updateData: any): Promise<FullTask>
 
 
 export const deleteTask = async (id: string): Promise<void> => {
-  const task = await getTaskById(id);
-  if (task && task.assignee_id && isActiveStatus(task.status)) {
-    await decrementActiveTasks(task.assignee_id);
-  }
-  const { error } = await supabase.from('tasks').delete().eq('id', id);
+  const { data, error } = await supabase.from('tasks').delete().eq('id', id).select('id').maybeSingle();
   if (error) throwError(error);
+  if (!data) throw new Error('Görev silinemedi veya bulunamadı.');
 };
 
 // -----------------------------------------------------------

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LayoutList, Kanban, Plus, Trash } from 'lucide-react';
 import { TaskTable } from '../components/tasks/TaskTable';
 import { TaskFormModal } from '../components/tasks/TaskFormModal';
@@ -30,6 +30,9 @@ export const TasksPage: React.FC = () => {
   const [viewedTask, setViewedTask] = useState<FullTask | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteInFlight = useRef(false);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -86,11 +89,19 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setDeleting(true);
+    setDeleteError(null);
     try {
       await deleteTask(id);
-      fetchTasks();
+      setDeleteConfirm(null);
+      await fetchTasks();
     } catch (error) {
-      console.error('Silme başarısız:', error);
+      setDeleteError(error instanceof Error ? error.message : 'Görev silinemedi. Lütfen tekrar deneyin.');
+    } finally {
+      deleteInFlight.current = false;
+      setDeleting(false);
     }
   };
 
@@ -165,7 +176,7 @@ const handleViewTask = (task: FullTask) => {
             <TaskTable
               tasks={tasks}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={(id) => { setDeleteError(null); setDeleteConfirm(id); }}
               onView={handleViewTask}
               loading={loading}
             />
@@ -225,7 +236,7 @@ const handleViewTask = (task: FullTask) => {
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => setDeleteConfirm(null)} />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" onClick={() => { if (!deleting) setDeleteConfirm(null); }} />
           <div className="relative w-full max-w-sm bg-coal-900/95 border border-white/10 rounded-2xl p-6 shadow-3xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
@@ -236,21 +247,21 @@ const handleViewTask = (task: FullTask) => {
             <p className="text-silver-300 mb-6">
               Bu görevi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
             </p>
+            {deleteError && <p role="alert" className="mb-4 text-sm text-red-400">{deleteError}</p>}
             <div className="flex gap-3">
               <button
+                disabled={deleting}
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-white/20 text-silver-400 hover:bg-white/10 transition-all text-sm font-medium"
               >
                 İptal
               </button>
               <button
-                onClick={() => {
-                  handleDelete(deleteConfirm);
-                  setDeleteConfirm(null);
-                }}
+                disabled={deleting}
+                onClick={() => void handleDelete(deleteConfirm)}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-red-500/90 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all text-sm font-semibold"
               >
-                Sil
+                {deleting ? 'Siliniyor…' : 'Sil'}
               </button>
             </div>
           </div>

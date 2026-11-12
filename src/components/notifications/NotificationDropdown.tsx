@@ -11,7 +11,6 @@ import {
   Clock,
   X,
   Calendar,
-  Users,
   Link2,
   UserPlus,
   UserMinus,
@@ -32,6 +31,8 @@ interface NotificationDropdownProps {
   onMarkAllRead: () => void;
   /** Bildirim silme */
   onDelete: (id: string) => void;
+  /** Bildirim merkezini aç */
+  onViewAll: () => void;
   /** Yükleniyor mu */
   isLoading?: boolean;
   /**Ekstra class'lar */
@@ -81,6 +82,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onNotificationClick,
   onMarkAllRead,
   onDelete,
+  onViewAll,
   isLoading = false,
   className = '',
 }) => {
@@ -291,7 +293,7 @@ const dropdownVariants: Variants = {
             {/* Footer */}
             {notifications.length > 0 && (
               <div className="border-t border-white/[0.06] px-4 py-2">
-                <button className="w-full rounded-lg py-2 text-center text-xs text-white/70 hover:bg-white/5 hover:text-white">
+                <button onClick={onViewAll} className="w-full rounded-lg py-2 text-center text-xs text-white/70 hover:bg-white/5 hover:text-white">
                   Tüm bildirimleri görüntüle →
                 </button>
               </div>
