@@ -8,7 +8,10 @@ Use Node.js 24 LTS for local development and production. Both Docker build stage
 and the worker CI job use Node.js 24. Node.js 24 receives updates through April
 2028; review the [Node.js release schedule](https://nodejs.org/en/about/previous-releases)
 before its end of life. Rebuild and redeploy the worker image after changing the
-runtime; updating this file does not change an already running deployment.
+runtime; updating this file does not change an already running deployment. CI
+also runs the production Docker image against an isolated, disabled local backend
+and verifies that its Node major version is 24. The test sends no real email and does not validate an already deployed
+service or its external provider.
 
 ## Queues
 
