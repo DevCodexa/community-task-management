@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ExternalLink, Eye, Pencil, Search, Trash2, Plus, Users } from 'lucide-react';
 import { AreaDetailModal } from '../components/org/AreaDetailModal';
 
@@ -21,6 +21,9 @@ export const AreasPage: React.FC = () => {
   const [areas, setAreas] = useState<OrgArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [deletingAreaId, setDeletingAreaId] = useState<string | null>(null);
+  const deleteInFlight = useRef(false);
 
   const [query, setQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -163,18 +166,23 @@ export const AreasPage: React.FC = () => {
   };
 
   const handleDeleteArea = async (area: OrgArea) => {
-    const confirmed = window.confirm(`"${area.name}" alanını kalıcı olarak silmek istediğinize emin misiniz?`);
+    if (deleteInFlight.current) return;
+    const confirmed = window.confirm(`"${area.name}" alanını kalıcı olarak silmek istediğinize emin misiniz? Bağlı projeler ve üye atamaları da silinir.`);
     if (!confirmed) return;
 
-    setLoading(true);
+    deleteInFlight.current = true;
+    setDeletingAreaId(area.id);
     setError(null);
+    setSuccess(null);
     try {
       await deleteArea(area.id);
+      setSuccess('Alan silindi.');
       await fetchAll();
-    } catch (e: any) {
-      setError(e?.message || 'Alan silinemedi.');
+    } catch {
+      setError('Alan silinemedi veya bulunamadı. Yetkinizi ve bağlantınızı kontrol edip tekrar deneyin.');
     } finally {
-      setLoading(false);
+      deleteInFlight.current = false;
+      setDeletingAreaId(null);
     }
   };
 
@@ -257,9 +265,11 @@ export const AreasPage: React.FC = () => {
         />
       </div>
 
+      {success && <div role="status" className="mb-6 rounded-lg bg-green-500/10 p-4 text-sm text-green-400">{success}</div>}
+
       {/* Error */}
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+        <div role="alert" className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3">
           <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20">
             <Users className="h-4 w-4 text-red-300" />
           </div>
@@ -387,8 +397,9 @@ export const AreasPage: React.FC = () => {
                               type="button"
                               className="p-2 rounded-lg text-red-500 transition-transform duration-200 hover:scale-110 hover:text-red-400 hover:bg-white/10"
                               onClick={() => handleDeleteArea(area)}
-                              title="Sil"
-                              aria-label="Alanı sil"
+                              disabled={deletingAreaId !== null}
+                              title={deletingAreaId === area.id ? 'Siliniyor…' : 'Sil'}
+                              aria-label={deletingAreaId === area.id ? 'Alan siliniyor' : 'Alanı sil'}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>

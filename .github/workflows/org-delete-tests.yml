@@ -20,3 +20,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test tests/org-delete.test.mjs
+      - run: node --test tests/area-delete-confirm.test.mjs
