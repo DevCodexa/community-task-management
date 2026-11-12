@@ -20,3 +20,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test tests/notification-privacy.test.mjs
+      - run: node --test tests/notification-recipient-guards.test.mjs
