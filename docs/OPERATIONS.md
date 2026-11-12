@@ -198,8 +198,12 @@ variables separately from Vercel's frontend variables:
 | `SUPABASE_URL` | Worker | URL of the worker's intended Supabase project. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Worker secret | Privileged server-only credential; never expose it to a browser. |
 
-The worker reads provider configuration, including `brevo_api_key`, sender
-identity, limits and `enabled`, from the backend-only `email_settings` table.
+The worker reads sender identity, limits and `enabled` from the backend-only
+`email_settings` table. Prefer the server-only `BREVO_API_KEY` environment
+secret; set `BREVO_REQUIRE_ENV_KEY=true` after provisioning it to disable the
+legacy database-key fallback. Identify every worker that still relies on the
+database key before removing or rotating it. See the worker README for rollout
+and compatibility details.
 The worker README documents queue types, claim handling and the exact required
 setting names. Do not log values or expose operational tables to browser clients.
 
