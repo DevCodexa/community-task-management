@@ -7,13 +7,12 @@ function logRaw(message: string): void {
   console.log('[EmailWorker] ' + message);
 }
 
-process.on('unhandledRejection', (reason: unknown) => {
-  const msg = reason instanceof Error ? reason.message : String(reason);
-  logRaw('unhandledRejection: ' + msg);
+process.on('unhandledRejection', () => {
+  logRaw('Unhandled rejection; inspect worker state.');
 });
 
-process.on('uncaughtException', (err: Error) => {
-  logRaw('uncaughtException: ' + err.message);
+process.on('uncaughtException', () => {
+  logRaw('Uncaught exception; inspect worker state.');
 });
 
 let processing = false;
@@ -28,14 +27,14 @@ async function processAllQueues(): Promise<void> {
     // Keep speaker queue failures isolated from general transactional mail.
     try {
       await processEmailQueue();
-    } catch (error) {
-      logRaw('speaker queue error: ' + (error instanceof Error ? error.message : String(error)));
+    } catch {
+      logRaw('Speaker queue cycle failed.');
     }
 
     try {
       await processGeneralEmailQueue();
-    } catch (error) {
-      logRaw('general queue error: ' + (error instanceof Error ? error.message : String(error)));
+    } catch {
+      logRaw('General queue cycle failed.');
     }
   } finally {
     processing = false;
